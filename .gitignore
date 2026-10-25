@@ -1,0 +1,8 @@
+# 產生的輸出（可由程式重新產生）
+output/
+__pycache__/
+*.pyc
+# 測試截圖
+*.png
+!docs/*.png
+.DS_Store

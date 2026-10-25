@@ -1,0 +1,30 @@
+{
+  "_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。",
+  "decedent": "P01",
+  "persons": [
+    {"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10",
+     "father": "P90", "mother": "P91", "spouse": "P02"},
+    {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"},
+
+    {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"},
+    {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"},
+    {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"},
+
+    {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"},
+
+    {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01",
+     "father": "P01", "mother": "P02", "spouse": "P30"},
+    {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"},
+    {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"},
+    {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"},
+
+    {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05",
+     "father": "P01", "mother": "P02", "renounced": ["P01"]},
+    {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"},
+
+    {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01",
+     "father": "P01", "mother": "P02", "spouse": "P31"},
+    {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"},
+    {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}
+  ]
+}

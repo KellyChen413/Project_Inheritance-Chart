@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<!-- 安全政策：禁止載入或連線到任何外部位址，只允許本檔案內的程式與樣式 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>繼承系統表產生器</title>
+<style>
+:root {
+  --bg: #F5F6F4; --panel: #FFFFFF; --ink: #1C2321; --muted: #5E6763; --line: #D9DDD9;
+  --accent: #1F5C4F; --accent-ink: #FFFFFF; --accent-soft: #E4EFEB;
+  --err: #A3261C; --err-bg: #FCECEA; --warn: #7A5300; --warn-bg: #FFF5DB;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink);
+  font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans CJK TC", "Noto Sans TC", sans-serif; font-size: 14px; line-height: 1.55; }
+header.top { background: var(--accent); color: var(--accent-ink); padding: 16px 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+header.top h1 { font-size: 20px; margin: 0; letter-spacing: .04em; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { border: 1px solid rgba(255,255,255,.55); border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+main { max-width: 1480px; margin: 0 auto; padding: 20px 28px 48px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+.panel > h2 { font-size: 16px; margin: 0 0 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+label.small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.view-tabs { display: flex; gap: 0; margin: 0 0 14px; border-bottom: 2px solid var(--line); }
+.view-tabs button { border: none; border-radius: 6px 6px 0 0; background: transparent; padding: 8px 18px; font-weight: 600; color: var(--muted); margin-bottom: -2px; border-bottom: 2px solid transparent; }
+.view-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-soft); }
+.form-sheet { max-width: 1000px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 26px 28px; }
+.fs-scroll { overflow-x: auto; }
+.fs-head { min-width: 560px; }
+.fs-head td { white-space: nowrap; }
+.fs-title { text-align: center; font-size: 24px; letter-spacing: .3em; margin: 0 0 16px; }
+.fs-head, .fs-table { border-collapse: collapse; width: 100%; }
+.fs-head td { border: 1px solid #555; padding: 6px 10px; font-size: 14px; }
+.fs-head td.k { background: #F1F4F2; font-weight: 700; width: 16%; white-space: nowrap; }
+.fs-table { margin-top: 14px; min-width: 760px; }
+.fs-table th, .fs-table td { border: 1px solid #555; padding: 5px 6px; font-size: 13px; vertical-align: top; }
+.fs-table th { background: #F1F4F2; white-space: nowrap; }
+.fs-table td:nth-child(2), .fs-table td:nth-child(3), .fs-table td:nth-child(5), .fs-table td:nth-child(6) { white-space: nowrap; }
+.fs-table td.c { text-align: center; white-space: nowrap; }
+.fs-table td.r { text-align: right; font-weight: 700; }
+.fs-table tfoot td { font-weight: 700; }
+.fs-table tr.k-heir td { background: #F4FAF5; }
+.fs-table tr.k-heir td:nth-child(8) { font-weight: 700; }
+.fs-table tr.k-renounced td, .fs-table tr.k-lost td { color: #9C1F16; }
+.fs-table tr.k-other td, .fs-table tr.k-predeceased td { color: #555; }
+.fs-foot { margin-top: 12px; font-size: 12.5px; color: #333; }
+.fs-foot p { margin: 2px 0; }
+.fs-foot p.warn { color: #B3261E; font-weight: 700; }
+.fs-sign { display: flex; justify-content: space-between; gap: 16px; margin-top: 22px; font-size: 14px; }
+.fs-sign span { flex: 1; border-bottom: 1px solid #999; padding-bottom: 4px; }
+.fs-sign span:first-child { border-bottom: none; }
+@media (max-width: 700px) {
+  main { padding: 14px 16px 40px; }
+  .panel { padding: 14px; }
+  header.top { padding: 14px 16px; }
+  .form-sheet { padding: 16px 12px; }
+}
+.step { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.toolbar .spacer { flex: 1; }
+label.inline { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+button { font: inherit; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.1); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.icon-btn { padding: 2px 8px; color: var(--muted); }
+select, input[type=text] { font: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; background: #fff; color: var(--ink); width: 100%; min-width: 0; }
+#decedent { width: auto; min-width: 200px; font-weight: 600; }
+input.bad { border-color: var(--err); background: var(--err-bg); }
+select:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.table-scroll { overflow-x: auto; }
+table#people { border-collapse: collapse; width: 100%; min-width: 1180px; }
+#people th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+#people td { padding: 5px 4px; border-bottom: 1px solid #EEF0EE; vertical-align: top; }
+#people td.num { color: var(--muted); text-align: right; padding-top: 10px; width: 28px; }
+#people td.center { text-align: center; padding-top: 9px; }
+#people tr.is-decedent td { background: #FDF1EF; }
+#people small { display: block; font-size: 11px; color: var(--muted); min-height: 15px; }
+#people small.bad { color: var(--err); }
+#people col.c-title { width: 112px; } #people col.c-uid { width: 118px; } #people col.c-name { width: 110px; } #people col.c-g { width: 64px; }
+#people col.c-date { width: 128px; } #people col.c-rel { width: 140px; } #people col.c-chk { width: 54px; } #people col.c-del { width: 44px; }
+#empty-hint { color: var(--muted); padding: 18px 4px 6px; margin: 0; }
+.notice { border-radius: 8px; padding: 10px 14px; margin: 0 0 12px; }
+.notice ul { margin: 6px 0 0; padding-left: 20px; }
+.notice.error { background: var(--err-bg); color: var(--err); border: 1px solid #F1C3BE; }
+.notice.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #F0DCA4; }
+.notice.ok { background: var(--accent-soft); color: var(--accent); border: 1px solid #BFD9D0; }
+.notice { position: relative; }
+.notice-close { position: absolute; top: 6px; right: 8px; border: none; background: transparent; }
+.placeholder { color: var(--muted); text-align: center; padding: 40px 0; margin: 0; }
+.chart-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.chart-wrap svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.result-table, .result-log { margin-top: 20px; }
+.result-table h3, .result-log h3 { font-size: 15px; margin: 0 0 8px; }
+.result-table table { border-collapse: collapse; width: 100%; }
+.result-table th, .result-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result-table th { background: var(--accent-soft); }
+.result-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.result-table tfoot td { font-weight: 700; background: #FAFAF8; }
+.result-log ol { margin: 0; padding-left: 22px; color: var(--muted); }
+.result-table td.remark { font-size: 13px; color: #444; min-width: 280px; }
+.result-table td:nth-child(-n+3), .result-table th { white-space: nowrap; }
+.result-table td:nth-child(4) { white-space: pre-line; min-width: 230px; }
+.result-table tr.row-decedent td { background: #FDF1EF; font-weight: 600; }
+.result-table tr.row-retrans td { background: #FFF8E6; }
+.result-table tr.row-renounced td { background: #FFF0EE; color: #9C1F16; }
+.result-table tr.row-renounced td.remark { color: #9C1F16; }
+.result-table tr.row-excluded td { color: #666; }
+.result-rules { margin-top: 20px; }
+.result-rules h3 { font-size: 15px; margin: 0 0 8px; }
+.result-rules dl { margin: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 16px; background: #FBFCFB; }
+.result-rules dt { font-weight: 700; margin-top: 10px; color: var(--accent); }
+.result-rules dd { margin: 2px 0 10px; }
+.retrans-panel { margin-top: 18px; border: 1px solid #F0DCA4; background: #FFFBEF; border-radius: 8px; padding: 10px 16px; }
+.retrans-panel h3 { font-size: 14px; margin: 0 0 4px; }
+.retrans-panel p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.retrans-group { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+#people input.auto { color: var(--accent); font-style: italic; }
+#people input.uid { font-family: Consolas, "Courier New", monospace; letter-spacing: .02em; }
+#people small.src, #people small.note { color: var(--muted); cursor: help; }
+.notice.info { background: #EEF4FB; color: #234E7A; border: 1px solid #C7D9EE; }
+#file-list { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+#file-list ul { margin: 4px 0 0; padding-left: 20px; }
+.followups { margin-top: 16px; border: 1px solid #E6D3A3; background: #FFFCF3; border-radius: 8px; padding: 10px 16px; }
+.followups h3 { font-size: 15px; margin: 0 0 8px; }
+.followups ul { list-style: none; margin: 0; padding: 0; }
+.followups li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-top: 1px dashed #EADFC2; }
+.followups li:first-child { border-top: none; }
+.followups .txt { flex: 1; }
+.followups .chip { flex: none; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #F3E3B5; color: #6B4A00; font-weight: 700; margin-top: 2px; }
+.followups li.must .chip { background: #F6D2CE; color: #9C1F16; }
+.followups button { flex: none; font-size: 13px; padding: 3px 10px; }
+.followups .ok-line { margin: 0; color: var(--accent); }
+.renounce-panel { margin-top: 20px; overflow-x: auto; }
+.renounce-panel table { min-width: 860px; }
+.renounce-panel h3 { font-size: 15px; margin: 0 0 4px; }
+.renounce-panel p { margin: 0 0 8px; font-size: 13px; }
+.renounce-panel table { border-collapse: collapse; width: 100%; }
+.renounce-panel th, .renounce-panel td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; font-size: 13px; }
+.renounce-panel th { background: var(--accent-soft); white-space: nowrap; }
+.renounce-panel td:nth-child(1), .renounce-panel td:nth-child(2), .renounce-panel td:nth-child(3) { white-space: nowrap; }
+.renounce-panel tr.row-pending td { background: #FFF8E6; }
+.renounce-panel tr.row-renounced td { background: #FFF0EE; color: #9C1F16; }
+.renounce-panel input, .renounce-panel select { min-width: 90px; }
+.result-table tr.row-pending td.remark { color: #8A5A00; }
+.muted { color: var(--muted); }
+dialog#map-dialog { border: none; border-radius: 12px; padding: 22px 26px; width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; box-shadow: 0 18px 48px rgba(0,0,0,.25); }
+dialog#map-dialog::backdrop { background: rgba(20, 30, 28, .45); }
+dialog#map-dialog h3 { margin: 0 0 4px; font-size: 17px; }
+dialog#map-dialog h4 { margin: 14px 0 6px; font-size: 14px; }
+dialog#map-dialog p { margin: 0 0 12px; font-size: 13px; }
+.kind-row { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 10px 12px; background: var(--accent-soft); border-radius: 8px; margin-bottom: 12px; }
+.map-table { border-collapse: collapse; width: 100%; }
+.map-table th, .map-table td { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: left; font-size: 13px; }
+.map-table td.req { font-weight: 700; }
+.map-table.preview td { color: var(--muted); }
+.map-error { color: var(--err); min-height: 20px; margin-top: 10px; font-size: 13px; }
+.map-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+details.help { margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 20px; }
+details.help summary { cursor: pointer; font-weight: 600; }
+details.help ul { margin: 8px 0 4px; padding-left: 20px; color: var(--muted); }
+footer.note { color: var(--muted); font-size: 12px; text-align: center; padding: 0 28px 24px; }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff; font-size: 11px; }
+  header.top, details.help, #input-panel, #messages, .no-print, footer.note { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .panel { border: none; padding: 0; margin: 0; }
+  .chart-wrap { border: none; overflow: visible; }
+  .chart-wrap svg { width: 100%; height: auto; max-height: 180mm; }
+  .result-table { break-before: page; }
+  .result-table tr, .result-rules dd { break-inside: avoid; }
+  .result-rules { break-before: page; }
+  .renounce-panel { break-before: page; overflow: visible; }
+  .renounce-panel table { min-width: 0; }
+  @page form-page { size: A4 portrait; margin: 12mm; }
+  .form-sheet { page: form-page; border: none; padding: 0; max-width: none; overflow: visible; }
+  .fs-table, .fs-head { min-width: 0; }
+  .fs-scroll { overflow: visible; }
+  .fs-table th, .fs-table td { font-size: 10.5px; padding: 3px 4px; }
+  .fs-head td { font-size: 11.5px; padding: 4px 8px; }
+  .fs-table tr { break-inside: avoid; }
+  .renounce-panel input, .renounce-panel select { border: none; background: transparent; appearance: none; -webkit-appearance: none; padding: 0; color: inherit; }
+  dialog { display: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>繼承系統表產生器</h1>
+  <div class="badges">
+    <span class="badge">離線運作・不連網</span>
+    <span class="badge">免安裝</span>
+    <span class="badge">資料不落地</span>
+  </div>
+</header>
+
+<main>
+  <details class="help">
+    <summary>使用說明與資安說明</summary>
+    <ul>
+      <li>本檔案為單一 HTML 檔，用 Edge 或 Chrome 直接開啟即可使用，不需安裝任何軟體，也不需要網路。</li>
+      <li>檔案內設有安全政策，瀏覽器會封鎖任何對外連線；程式碼為純文字，可由資訊單位直接檢視。</li>
+      <li>輸入的資料只存在本頁面的記憶體中，不會寫入硬碟或瀏覽器儲存空間，關閉分頁即清除。若需保存，請按「匯出案件檔」並依單位規定保管。唯一會記在瀏覽器的是「欄位對應設定」（只有欄位名稱，不含個人資料），下次匯入同樣格式的檔案時自動套用。</li>
+      <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 CSV，可一次選多份。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；親屬關係依「稱謂（相對於本人）」與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
+      <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
+      <li><b>拋棄繼承查證：</b>系統表下方列出需查證的人，至法院家事事件公告查詢後登錄結果、法院與案號。尚未查證完成前，系統表會標示「尚非最終結果」。</li>
+      <li>日期可輸入民國（例：114/3/10）或西元（例：2025-03-10）。</li>
+      <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
+      <li><b>Excel 日期注意：</b>在 Excel 輸入「37/5/12」這類兩位數民國年，會被自動改成西元 1937 年。民國 100 年以前的日期請寫成「民國37年5月12日」或西元「1948/5/12」，或先將日期欄設為文字格式。</li>
+      <li>「喪失」欄是指對目前選定之被繼承人喪失繼承權（第1145條）。拋棄繼承請在「拋棄繼承查證」登錄，含再轉部分的拋棄。</li>
+      <li>系統表與明細會自動加註備註：拋棄繼承、喪失繼承權、代位繼承、再轉繼承等情形，均註明條文依據。</li>
+      <li>適用現行民法第1138～1144、1176條；尚未處理舊法適用、收養、遺囑及特留分，結果僅供承辦參考，應與戶籍資料核對。</li>
+    </ul>
+  </details>
+
+  <section class="panel" id="input-panel">
+    <h2><span class="step">1</span>輸入家族資料</h2>
+    <div class="toolbar">
+      <label class="inline">被繼承人 <select id="decedent"></select></label>
+      <span class="spacer"></span>
+      <button type="button" class="primary" id="btn-import" title="戶籍資料 CSV（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
+      <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
+      <button type="button" id="btn-sample">手動資料範例</button>
+      <button type="button" id="btn-template" title="本系統 CSV 範本，用 Excel 手動填寫">CSV 範本</button>
+      <button type="button" id="btn-export-csv" title="匯出為 CSV，可用 Excel 開啟">匯出 CSV</button>
+      <button type="button" id="btn-export" title="匯出完整案件檔，含匯入紀錄與拋棄查證">匯出案件檔</button>
+      <button type="button" id="btn-clear">清除全部</button>
+      <input type="file" id="file" accept=".csv,.txt,.json,text/csv,application/json" multiple hidden>
+    </div>
+    <div id="import-messages"></div>
+    <div id="file-list"></div>
+    <div class="table-scroll">
+      <table id="people">
+        <colgroup><col><col class="c-title"><col class="c-name"><col class="c-uid"><col class="c-g"><col class="c-date"><col class="c-date">
+          <col class="c-rel"><col class="c-rel"><col class="c-rel"><col class="c-chk"><col class="c-del"></colgroup>
+        <thead><tr><th></th><th>稱謂（對被繼承人）</th><th>姓名</th><th>統一編號</th><th>性別</th><th>出生日期</th><th>死亡日期</th><th>父</th><th>母</th><th>配偶</th><th>喪失</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="empty-hint">尚無資料。請按「匯入檔案」匯入戶籍資料，或按「新增人員」逐筆輸入；也可先按「戶籍匯入範例」看看實務流程。</p>
+    <div class="toolbar" style="margin:12px 0 0"><button type="button" id="btn-add">＋ 新增人員</button></div>
+    <div id="followups"></div>
+  </section>
+
+  <section class="panel" id="report">
+    <h2 class="no-print"><span class="step">2</span>繼承系統表
+      <span class="spacer" style="flex:1"></span>
+      <label class="inline small"><input type="checkbox" id="chk-uid"> 顯示完整統一編號</label>
+      <button type="button" id="btn-svg" disabled title="下載樹狀圖（SVG）">下載樹狀圖</button>
+      <button type="button" id="btn-xlsx" disabled title="下載表格式繼承系統表（Excel）">下載 Excel</button>
+      <button type="button" class="primary" id="btn-print" disabled title="列印目前檢視（樹狀圖或表格式）">列印／另存 PDF</button>
+    </h2>
+    <div id="messages"></div>
+    <div id="report-body"></div>
+  </section>
+</main>
+<footer class="note">本工具依現行民法自動判斷，結果僅供參考，正式文件請以承辦人核對為準。</footer>
+
+<dialog id="map-dialog"></dialog>
+<script type="application/json" id="sample-data">{"_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。", "decedent": "P01", "persons": [{"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10", "father": "P90", "mother": "P91", "spouse": "P02"}, {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"}, {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"}, {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"}, {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"}, {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"}, {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01", "father": "P01", "mother": "P02", "spouse": "P30"}, {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"}, {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"}, {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"}, {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05", "father": "P01", "mother": "P02", "renounced": ["P01"]}, {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"}, {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01", "father": "P01", "mother": "P02", "spouse": "P31"}, {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"}, {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}]}</script>
+<script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n母,李秀英,A000000091,女,015/07/15,,,,王福來\n配偶,林美華,A000000002,女,040/09/03,,,,王大明\n弟,王大華,A000000092,男,042/04/08,,王福來,李秀英,\n長男,王志強,A000000010,男,061/01/20,,王大明,林美華,\n次男,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n長女,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n次女,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n孫,王小安,A000000020,男,090/08/08,,王志偉,黃雅婷,\n外孫女,陳小美,A000000022,女,095/05/17,,陳文雄,王淑芬,\n外孫,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n父,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n母,林美華,A000000002,女,040/09/03,,,,王大明\n配偶,張建國,A000000031,男,068/09/09,,張老三,吳美玉,王淑娟\n長男,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n兄,王志強,A000000010,男,061/01/20,,王大明,林美華,\n兄,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n姊,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n祖父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n祖母,李秀英,A000000091,女,015/07/15,,,,王福來\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
+<script>
+/* ============================================================
+ * 民法繼承規則引擎（JavaScript 版，與 Python 版 engine.py 邏輯一致）
+ * 第1138、1139、1140、1144、1176條，第11條同時死亡推定，再轉繼承
+ * 純運算，不讀寫檔案、不連網。
+ * ============================================================ */
+"use strict";
+
+/* ---------- 分數 ---------- */
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+class Frac {
+  constructor(n, d = 1) {
+    if (d < 0) { n = -n; d = -d; }
+    const g = gcd(n, d);
+    this.n = n / g; this.d = d / g;
+  }
+  add(o) { return new Frac(this.n * o.d + o.n * this.d, this.d * o.d); }
+  sub(o) { return new Frac(this.n * o.d - o.n * this.d, this.d * o.d); }
+  mul(o) { return new Frac(this.n * o.n, this.d * o.d); }
+  div(k) { return new Frac(this.n, this.d * k); }
+  eq(o) { return this.n === o.n && this.d === o.d; }
+  toString() { return this.d === 1 ? String(this.n) : `${this.n}/${this.d}`; }
+}
+const ONE = new Frac(1), ZERO = new Frac(0);
+
+/* ---------- 日期 ---------- */
+// 接受西元 2025-03-10 / 2025/3/10，或民國 114/3/10、114.3.10、114-3-10
+function parseDate(s) {
+  if (s === null || s === undefined) return null;
+  s = String(s).trim();
+  if (!s) return null;
+  // 純數字：戶政系統常見的民國 7 碼（0370512、1140310），或西元 8 碼（19480512）
+  const digits = s.match(/^(\d{5,8})$/);
+  if (digits) {
+    const v = digits[1];
+    s = v.length === 8 && /^(18|19|20)/.test(v) ? `${v.slice(0, 4)}/${v.slice(4, 6)}/${v.slice(6)}`
+      : v.length <= 7 ? `${v.slice(0, -4)}/${v.slice(-4, -2)}/${v.slice(-2)}` : s;
+  }
+  const m = s.match(/^(?:民國)?\s*(\d{1,4})\s*[\/\.\-年]\s*(\d{1,2})\s*[\/\.\-月]\s*(\d{1,2})\s*日?$/);
+  if (!m) return undefined;                          // undefined = 格式錯誤
+  let y = +m[1]; const mo = +m[2], d = +m[3];
+  if (y < 1000) y += 1911;                           // 民國年
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return undefined;
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;   // ISO 字串可直接比大小
+}
+function roc(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return y > 1911 ? `民國${y - 1911}年${m}月${d}日` : `民國前${1912 - y}年${m}月${d}日`;
+}
+
+/* ---------- 家族 ---------- */
+class Family {
+  constructor(persons) {
+    this.p = {};
+    for (const x of persons) {
+      this.p[x.id] = Object.assign({ title: "", gender: "", birth: null, death: null, father: null,
+        mother: null, spouse: null, renounced: [], lost_right: [] }, x);
+    }
+    for (const x of Object.values(this.p)) {          // 配偶雙向補齊
+      if (x.spouse && this.p[x.spouse] && !this.p[x.spouse].spouse) this.p[x.spouse].spouse = x.id;
+    }
+  }
+  byBirth(list) { return list.slice().sort((a, b) => (a.birth || "").localeCompare(b.birth || "")); }
+  children(id) { return this.byBirth(Object.values(this.p).filter(x => x.father === id || x.mother === id)); }
+  parents(id) { const me = this.p[id]; return [me.father, me.mother].filter(i => i && this.p[i]).map(i => this.p[i]); }
+  siblings(id) {
+    const mine = [this.p[id].father, this.p[id].mother].filter(Boolean);
+    return this.byBirth(Object.values(this.p).filter(x => x.id !== id &&
+      [x.father, x.mother].some(v => v && mine.includes(v))));
+  }
+  grandparents(id) { return this.parents(id).flatMap(par => this.parents(par.id)); }
+}
+
+/* ---------- 規則引擎 ---------- */
+class InheritanceEngine {
+  constructor(family) { this.f = family; }
+
+  static aliveAt(p, d) {
+    const born = !p.birth || p.birth <= d;
+    return born && (!p.death || p.death > d);        // 同日死亡 → 推定同時死亡，不繼承
+  }
+  eligible(p, did, d) {
+    return InheritanceEngine.aliveAt(p, d) && !p.renounced.includes(did) && !p.lost_right.includes(did);
+  }
+  reason(p, did, d) {
+    if (p.renounced.includes(did)) return "拋棄繼承";
+    if (!InheritanceEngine.aliveAt(p, d)) return p.death && p.death <= d ? "繼承開始前死亡" : "繼承開始時尚未出生";
+    if (p.lost_right.includes(did)) return "喪失繼承權";
+    return "";
+  }
+
+  distribute(did, openedOn = null, depth = 0) {
+    if (depth > 10) throw new Error("再轉繼承層數過深，請檢查資料");
+    const f = this.f, dec = f.p[did];
+    const d = openedOn || dec.death;
+    if (!d) throw new Error(`${dec.name} 沒有死亡日期，無法開始繼承`);
+    const notes = {}, log = [], represents = {};
+    log.push(`【${dec.name}】繼承開始日：${roc(d)}`);
+
+    // 第一順序（含代位）
+    const branch = (pid, represented = null) => {
+      const p = f.p[pid];
+      if (p.birth && p.birth > d) return [];
+      if (p.renounced.includes(did)) {
+        notes[pid] = "拋棄繼承";
+        log.push(`${p.name}：拋棄繼承（第1176條），不發生代位，其應繼分歸屬其他同順序繼承人`);
+        return [];
+      }
+      if (this.eligible(p, did, d)) {
+        return [{ id: pid, w: ONE,
+          basis: represented ? `第1140條 代位繼承（代位${represented}）` : "第1138條 第一順序 直系血親卑親屬",
+          short: represented ? `代位繼承（代位${represented}）` : "本位繼承" }];
+      }
+      const why = p.lost_right.includes(did) ? "喪失繼承權" : "繼承開始前死亡";
+      notes[pid] = why;
+      const subs = f.children(pid).map(k => branch(k.id, p.name)).filter(b => b.length);
+      log.push(subs.length
+        ? `${p.name}：${why}，由其直系血親卑親屬代位繼承（第1140條）`
+        : `${p.name}：${why}，且無可代位之直系血親卑親屬`);
+      if (!subs.length) return [];
+      represents[pid] = [...new Set(subs.flat().map(h => h.id))];   // 記錄由誰代位
+      return subs.flatMap(sub => sub.map(h => ({ ...h, w: h.w.div(subs.length) })));
+    };
+
+    let branches = [], level = f.children(did), firstDegree = true;
+    while (level.length && !branches.length) {
+      branches = level.map(c => branch(c.id)).filter(b => b.length);
+      if (branches.length && !firstDegree) {
+        log.push("第一順序親等近者均無法繼承，由次親等直系血親卑親屬繼承（第1176條第5項）");
+        branches = branches.map(b => b.map(h => ({ ...h,
+          basis: "第1176條第5項 次親等直系血親卑親屬繼承", short: "次親等繼承" })));
+      }
+      if (!branches.length) { level = level.flatMap(c => f.children(c.id)); firstDegree = false; }
+    }
+
+    // 配偶
+    const sp = dec.spouse ? f.p[dec.spouse] : null;
+    const spouseOk = !!(sp && this.eligible(sp, did, d));
+    if (sp && !spouseOk) { notes[sp.id] = this.reason(sp, did, d); log.push(`配偶${sp.name}：${notes[sp.id]}`); }
+
+    const shares = [];
+    let order;
+    if (branches.length) {
+      order = "第一順序";
+      const units = branches.length + (spouseOk ? 1 : 0);
+      log.push(`第一順序共 ${branches.length} 房${spouseOk ? "，與配偶平均" : ""}，每份 1/${units}（第1144條第1款）`);
+      for (const b of branches) for (const h of b) shares.push({ id: h.id, share: h.w.div(units), basis: h.basis, short: h.short });
+      if (spouseOk) shares.push({ id: sp.id, share: new Frac(1, units), basis: "第1144條第1款 配偶與第一順序平均", short: "第1144條 配偶" });
+      for (const x of [...f.parents(did), ...f.siblings(did), ...f.grandparents(did)]) {
+        if (!(x.id in notes)) notes[x.id] = InheritanceEngine.aliveAt(x, d) ? "有第一順序繼承人，不繼承" : this.reason(x, did, d);
+      }
+    } else {
+      const groups = [
+        ["第二順序", f.parents(did), new Frac(1, 2), "第1138條 第二順序 父母", "第二順序 父母", "第2款"],
+        ["第三順序", f.siblings(did), new Frac(1, 2), "第1138條 第三順序 兄弟姊妹", "第三順序 兄弟姊妹", "第2款"],
+        ["第四順序", f.grandparents(did), new Frac(2, 3), "第1138條 第四順序 祖父母", "第四順序 祖父母", "第3款"],
+      ];
+      let chosen = null;
+      for (const [name, group, spPart, basis, short, art] of groups) {
+        const ok = [];
+        for (const x of group) {
+          if (this.eligible(x, did, d)) ok.push(x);
+          else if (!(x.id in notes)) notes[x.id] = this.reason(x, did, d);
+        }
+        if (ok.length) { chosen = { name, ok, spPart, basis, short, art }; break; }
+        if (group.length) log.push(`${name}無可繼承之人`);
+      }
+      if (chosen) {
+        order = chosen.name;
+        const rest = spouseOk ? ONE.sub(chosen.spPart) : ONE;
+        for (const x of chosen.ok) shares.push({ id: x.id, share: rest.div(chosen.ok.length), basis: chosen.basis, short: chosen.short });
+        if (spouseOk) shares.push({ id: sp.id, share: chosen.spPart, basis: `第1144條${chosen.art} 配偶`, short: "第1144條 配偶" });
+        log.push(`由${order}繼承${spouseOk ? `，配偶應繼分 ${chosen.spPart}` : ""}`);
+      } else if (spouseOk) {
+        order = "僅配偶";
+        shares.push({ id: sp.id, share: ONE, basis: "第1144條第4款 無其他順序繼承人", short: "配偶（全部）" });
+        log.push("無其他順序繼承人，配偶取得全部（第1144條第4款）");
+      } else {
+        order = "無人承受（第1177條）";
+        log.push("無任何繼承人，屬無人承受之遺產（第1177條）");
+      }
+    }
+
+    const result = { decedentId: did, openedOn: d, order, shares, notes, log, represents, retransfers: {} };
+
+    // 再轉繼承
+    for (const s of shares) {
+      const heir = f.p[s.id];
+      if (heir.death && heir.death > d) {
+        log.push(`${heir.name}：於繼承開始後死亡（${roc(heir.death)}），其應繼分 ${s.share} 由其繼承人再轉繼承`);
+        result.retransfers[heir.id] = this.distribute(heir.id, heir.death, depth + 1);
+      }
+    }
+
+    const total = shares.reduce((a, s) => a.add(s.share), ZERO);
+    if (shares.length && !total.eq(ONE)) throw new Error(`內部錯誤：應繼分合計 ${total} ≠ 1`);
+    return result;
+  }
+}
+
+/* 展開再轉繼承後的最終應繼分 */
+function finalShares(result) {
+  const out = {};
+  for (const s of result.shares) {
+    if (result.retransfers[s.id]) {
+      for (const [pid, fr] of Object.entries(finalShares(result.retransfers[s.id]))) {
+        out[pid] = (out[pid] || ZERO).add(fr.mul(s.share));
+      }
+    } else {
+      out[s.id] = (out[s.id] || ZERO).add(s.share);
+    }
+  }
+  return out;
+}
+
+/* ============================================================
+ * 備註：說明每個未直接繼承者的狀況與條文依據
+ * 回傳 { pid: { tag: 方塊上的短標示, text: 完整備註, kind: "renounced"|"lost"|"predeceased"|"retrans"|"other" } }
+ * ============================================================ */
+function buildRemarks(fam, result) {
+  const R = {};
+  const final = finalShares(result);
+  const names = ids => ids.map(i => fam.p[i].name).join("、");
+  const isDescendant = (pid, root) => {
+    const p = fam.p[pid];
+    return [p.father, p.mother].some(x => x && (x === root || isDescendant(x, root)));
+  };
+
+  const walk = (res, isSub) => {
+    const did = res.decedentId, dname = fam.p[did].name;
+
+    // 再轉繼承：繼承開始後死亡的繼承人
+    for (const s of res.shares) {
+      const sub = res.retransfers[s.id];
+      if (!sub || R[s.id]) continue;
+      const p = fam.p[s.id], heirs = sub.shares.map(x => x.id);
+      R[s.id] = { kind: "retrans", tag: "繼承開始後死亡・再轉繼承",
+        text: `於繼承開始後、遺產分割前死亡（${roc(p.death)}），其已取得之應繼分 ${s.share} 成為其遺產，` +
+          (heirs.length ? `由其繼承人${names(heirs)}依其死亡時之繼承順序再轉繼承。` : "其本身無繼承人。") };
+    }
+
+    for (const [pid, note] of Object.entries(res.notes)) {
+      if (R[pid]) continue;
+      const p = fam.p[pid], rep = res.represents[pid];
+      if (isSub) {                                     // 再轉那一層只標示有意義的狀況
+        if (note === "拋棄繼承") R[pid] = { kind: "renounced", tag: `拋棄${dname}之再轉部分`,
+          text: `對${dname}之遺產拋棄繼承，不參與該部分之再轉繼承（民法第1174條）` +
+            (final[pid] ? "；但仍保有其本身對原被繼承人之應繼分。" : "。") };
+        else if (note === "喪失繼承權") R[pid] = { kind: "lost", tag: `喪失${dname}之繼承權`,
+          text: `對${dname}喪失繼承權（民法第1145條），不參與該部分之再轉繼承。` };
+        continue;
+      }
+      switch (note) {
+        case "拋棄繼承":
+          R[pid] = { kind: "renounced", tag: "拋棄繼承・無繼承權",
+            text: "拋棄繼承，溯及於繼承開始時即無繼承權（民法第1174條、第1175條）；其應繼分歸屬其他同為繼承之人（第1176條第1項），" +
+              "其直系血親卑親屬不得代位繼承。" };
+          break;
+        case "喪失繼承權":
+          R[pid] = { kind: "lost", tag: rep ? "喪失繼承權・由子女代位" : "喪失繼承權・無繼承權",
+            text: "依民法第1145條喪失繼承權，" + (rep ? `由其直系血親卑親屬${names(rep)}代位繼承其應繼分（第1140條）。` : "且無直系血親卑親屬可代位繼承。") };
+          break;
+        case "繼承開始前死亡":
+          if (rep) R[pid] = { kind: "predeceased", tag: "繼承開始前死亡・由子女代位",
+            text: `於繼承開始前死亡（${roc(p.death)}），由其直系血親卑親屬${names(rep)}代位繼承其應繼分（民法第1140條）；` +
+              "代位繼承人按被代位人之應繼分平均分受。" };
+          else if (isDescendant(pid, did)) R[pid] = { kind: "predeceased", tag: "繼承開始前死亡",
+            text: `於繼承開始前死亡（${roc(p.death)}），且無直系血親卑親屬可代位繼承。` };
+          else R[pid] = { kind: "predeceased", tag: "繼承開始前死亡",
+            text: `於繼承開始前死亡（${roc(p.death)}），依同時存在原則不具繼承資格。` };
+          break;
+        case "繼承開始時尚未出生":
+          R[pid] = { kind: "other", tag: "繼承開始時尚未出生", text: "繼承開始時尚未出生（亦非胎兒），不具繼承資格。" };
+          break;
+        case "有第一順序繼承人，不繼承":
+          R[pid] = { kind: "other", tag: "後順序・不繼承", text: "因有第一順序繼承人，依民法第1138條不得繼承。" };
+          break;
+        default:
+          R[pid] = { kind: "other", tag: note, text: note };
+      }
+    }
+    for (const sub of Object.values(res.retransfers)) walk(sub, true);
+  };
+  walk(result, false);
+
+  // 其餘非繼承人：說明為何沒有繼承權
+  const represented = new Set(Object.keys(result.represents));
+  for (const p of Object.values(fam.p)) {
+    if (p.id === result.decedentId || R[p.id] || final[p.id]) continue;
+    const parentRenounced = [p.father, p.mother].map(x => fam.p[x]).find(x => x && x.renounced.includes(result.decedentId));
+    if (p.spouse && represented.has(p.spouse)) {
+      R[p.id] = { kind: "other", tag: "被代位人之配偶・無繼承權",
+        text: `為被代位人${fam.p[p.spouse].name}之配偶；代位繼承以直系血親卑親屬為限（民法第1140條），配偶不得代位，無繼承權。` };
+    } else if (parentRenounced) {
+      R[p.id] = { kind: "other", tag: "親拋棄・不得代位",
+        text: `其${parentRenounced.gender === "M" ? "父" : parentRenounced.gender === "F" ? "母" : "直系尊親屬"}${parentRenounced.name}拋棄繼承，拋棄不發生代位繼承，無繼承權。` };
+    } else {
+      R[p.id] = { kind: "other", tag: "非繼承人", text: "非民法第1138條所定之法定繼承人。" };
+    }
+  }
+  return R;
+}
+
+/* 本案實際適用的規定（只列出有用到的） */
+function applicableRules(fam, result) {
+  const rules = [];
+  const all = [];
+  const collect = r => { all.push(r); Object.values(r.retransfers).forEach(collect); };
+  collect(result);
+  const anyNote = n => all.some(r => Object.values(r.notes).includes(n));
+  const dec = fam.p[result.decedentId];
+
+  rules.push({ title: "繼承順序（民法第1138條、第1139條）",
+    text: `遺產繼承人，除配偶外，依直系血親卑親屬、父母、兄弟姊妹、祖父母之順序定之；第一順序以親等近者為先。本案由${result.order}繼承。` });
+  if (dec.spouse && result.shares.some(s => s.id === dec.spouse)) rules.push({ title: "配偶應繼分（民法第1144條）",
+    text: "配偶與第一順序繼承人同為繼承時，應繼分與他繼承人平均；與第二、三順序同為繼承時為二分之一；與第四順序同為繼承時為三分之二；無其他順序繼承人時為全部。" });
+  if (all.some(r => Object.keys(r.represents).length)) rules.push({ title: "代位繼承（民法第1140條）",
+    text: "第一順序繼承人有於繼承開始前死亡或喪失繼承權者，由其直系血親卑親屬代位繼承其應繼分。" +
+      "代位繼承人限於直系血親卑親屬，被代位人之配偶不得代位；代位人須於繼承開始時生存；拋棄繼承者不發生代位繼承。" });
+  if (Object.keys(result.retransfers).length) rules.push({ title: "再轉繼承",
+    text: "繼承人於繼承開始後、遺產分割前死亡，其已取得之應繼分成為其遺產，由其繼承人依其死亡時之繼承順序及應繼分再行繼承。" +
+      "與代位繼承不同，再轉繼承人不限於直系血親卑親屬，配偶亦得再轉繼承；再轉繼承人得僅就再轉部分拋棄繼承。" });
+  if (anyNote("拋棄繼承")) rules.push({ title: "拋棄繼承（民法第1174條至第1176條）",
+    text: "繼承人得於知悉其得繼承之時起三個月內拋棄繼承權，拋棄之效力溯及於繼承開始時。拋棄者之應繼分歸屬其他同為繼承之人；" +
+      "第一順序繼承人中親等近者均拋棄時，由次親等之直系血親卑親屬繼承。" });
+  if (anyNote("喪失繼承權")) rules.push({ title: "喪失繼承權（民法第1145條）",
+    text: "繼承人有民法第1145條第1項各款情事者喪失其繼承權；其直系血親卑親屬得代位繼承。" });
+  rules.push({ title: "同時存在原則（民法第6條、第11條）",
+    text: "繼承人須於繼承開始時生存；二人以上同時遇難而不能證明其死亡之先後時，推定其為同時死亡，相互間不發生繼承。" });
+  return rules;
+}
+
+/* 輸入檢查：回傳 { errors:[], warnings:[] } */
+function validate(persons, decedentId) {
+  const errors = [], warnings = [];
+  const ids = new Set(persons.map(p => p.id));
+  const byId = Object.fromEntries(persons.map(p => [p.id, p]));
+  const label = p => p.name || `（未命名 ${p.id}）`;
+
+  if (!persons.length) errors.push("尚未輸入任何人員");
+  if (!decedentId || !ids.has(decedentId)) errors.push("請選擇被繼承人");
+  else if (!byId[decedentId].death && !byId[decedentId]._deathRaw) errors.push(`被繼承人 ${label(byId[decedentId])} 必須填寫死亡日期`);
+
+  for (const p of persons) {
+    if (!p.name || !p.name.trim()) errors.push(`第 ${persons.indexOf(p) + 1} 列：姓名未填寫`);
+    if (p._birthRaw && p.birth === undefined) errors.push(`${label(p)}：出生日期格式錯誤（例：114/3/10 或 2025-03-10）`);
+    if (p._deathRaw && p.death === undefined) errors.push(`${label(p)}：死亡日期格式錯誤`);
+    if (p.birth && p.death && p.death < p.birth) errors.push(`${label(p)}：死亡日期早於出生日期`);
+    for (const rel of ["father", "mother", "spouse"]) {
+      if (p[rel] === p.id) errors.push(`${label(p)}：不能把自己設為自己的${{ father: "父", mother: "母", spouse: "配偶" }[rel]}`);
+      if (p[rel] && !ids.has(p[rel])) errors.push(`${label(p)}：關聯的人員不存在`);
+    }
+    if (p.father && p.father === p.mother) errors.push(`${label(p)}：父與母不能是同一人`);
+    for (const rel of ["father", "mother"]) {
+      const par = byId[p[rel]];
+      if (par && par.birth && p.birth && par.birth >= p.birth) errors.push(`${label(p)}：${rel === "father" ? "父" : "母"}的出生日期晚於本人`);
+      if (par && p.spouse === par.id) errors.push(`${label(p)}：配偶與父母重複`);
+    }
+    if (p.spouse && byId[p.spouse] && byId[p.spouse].spouse && byId[p.spouse].spouse !== p.id) {
+      warnings.push(`${label(p)} 與 ${label(byId[p.spouse])} 的配偶設定不一致，請確認`);
+    }
+    if (p.father && byId[p.father] && byId[p.father].gender === "F") warnings.push(`${label(p)}：父的性別填為女，請確認`);
+    if (p.mother && byId[p.mother] && byId[p.mother].gender === "M") warnings.push(`${label(p)}：母的性別填為男，請確認`);
+  }
+
+  // 統一編號重複
+  const uidSeen = {};
+  for (const p of persons) {
+    const u = (p.uid || "").trim().toUpperCase();
+    if (!u) continue;
+    if (uidSeen[u]) errors.push(`${label(uidSeen[u])} 與 ${label(p)} 的統一編號相同（${u.slice(0, 3)}…），請確認是否為同一人`);
+    else uidSeen[u] = p;
+  }
+
+  // 親子關係迴圈（例如 A 是 B 的父、B 又是 A 的父）
+  const state = {};
+  const visit = (id, path) => {
+    if (state[id] === 2) return false;
+    if (state[id] === 1) { errors.push(`親屬關係形成迴圈：${path.map(i => label(byId[i])).join(" → ")}`); return true; }
+    state[id] = 1;
+    const p = byId[id];
+    for (const par of [p.father, p.mother]) if (par && byId[par] && visit(par, [...path, par])) return true;
+    state[id] = 2;
+    return false;
+  };
+  for (const p of persons) if (visit(p.id, [p.id])) break;
+
+  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
+}
+
+// module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules };
+
+/* ============================================================
+ * 繼承系統表 SVG 樹狀圖（自製排版，不依賴任何外部套件）
+ * ============================================================ */
+"use strict";
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const NODE_W = 178, NODE_H = 108, SP_GAP = 40, SIB_GAP = 26, ROW_H = 176, MARGIN = 36, TOP = 128;
+const KIND = {
+  decedent: { fill: "#FBE3E1", stroke: "#B3261E", label: "被繼承人" },
+  heir:     { fill: "#E3F2E6", stroke: "#1E6B34", label: "繼承人" },
+  retrans:  { fill: "#FFF4D6", stroke: "#8A6100", label: "再轉繼承" },
+  renounced:{ fill: "#FFF0EE", stroke: "#B3261E", label: "拋棄／喪失繼承權", dashed: true, ink: "#9C1F16" },
+  excluded: { fill: "#F3F3F3", stroke: "#9A9A9A", label: "不參與繼承", dashed: true, ink: "#666666" },
+};
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;           // 一律用 textContent，避免注入
+  return e;
+}
+
+/* 每個人在圖上的身分、方塊文字與備註 */
+function classify(fam, result) {
+  const final = finalShares(result);
+  const remarks = buildRemarks(fam, result);
+  const info = {}, original = {};
+  const walk = (res, fromName) => {
+    for (const s of res.shares) {
+      original[s.id] ??= s.share;
+      if (!res.retransfers[s.id] && !info[s.id]) {
+        info[s.id] = { kind: "heir", lines: [fromName ? `再轉繼承（自${fromName}）` : s.short, `應繼分 ${final[s.id]}`] };
+      }
+    }
+    for (const [pid, sub] of Object.entries(res.retransfers)) walk(sub, fam.p[pid].name);
+  };
+  walk(result, null);
+
+  for (const pid of Object.keys(fam.p)) {
+    const r = remarks[pid];
+    if (pid === result.decedentId) info[pid] = { kind: "decedent", lines: [] };
+    else if (r && r.kind === "retrans") info[pid] = { kind: "retrans", lines: [`原應繼分 ${original[pid]}`, r.tag] };
+    else if (r && info[pid]) info[pid].lines.splice(1, 0, r.tag);                  // 繼承人但另有備註
+    else if (r) info[pid] = { kind: r.kind === "renounced" || r.kind === "lost" ? "renounced" : "excluded", lines: [r.tag] };
+    else if (!info[pid]) info[pid] = { kind: "excluded", lines: ["非繼承人"] };
+  }
+  return { info, final, remarks };
+}
+
+/* 世代：以被繼承人為 0，往上為負、往下為正 */
+function generations(fam, root) {
+  const gen = { [root]: 0 }, q = [root];
+  while (q.length) {
+    const id = q.shift(), p = fam.p[id], next = [];
+    for (const c of fam.children(id)) next.push([c.id, gen[id] + 1]);
+    for (const par of fam.parents(id)) next.push([par.id, gen[id] - 1]);
+    if (p.spouse && fam.p[p.spouse]) next.push([p.spouse, gen[id]]);
+    for (const [nid, g] of next) if (!(nid in gen)) { gen[nid] = g; q.push(nid); }
+  }
+  for (const id of Object.keys(fam.p)) if (!(id in gen)) gen[id] = 0;   // 與被繼承人無連結者
+  return gen;
+}
+
+/* 排版：配偶組成一個單位，單位之間形成樹，由下往上計算寬度 */
+function layout(fam, did) {
+  const gen = generations(fam, did);
+  const hasParents = p => !!(p.father && fam.p[p.father]) || !!(p.mother && fam.p[p.mother]);
+  const persons = Object.values(fam.p).sort((a, b) => gen[a.id] - gen[b.id] || (a.birth || "").localeCompare(b.birth || ""));
+  const unitOf = {}, units = [];
+
+  for (const p of persons) {
+    if (unitOf[p.id]) continue;
+    let members = [p];
+    const s = p.spouse && fam.p[p.spouse];
+    if (s && !unitOf[s.id]) {
+      let left = p, right = s;                              // 血親在左、姻親在右
+      if (s.id === did || (hasParents(s) && !hasParents(p))) [left, right] = [s, p];
+      else if (p.id !== did && !hasParents(p) && !hasParents(s) && p.gender === "F" && s.gender === "M") [left, right] = [s, p];
+      members = [left, right];
+    }
+    const u = { members, children: [], parent: null };
+    members.forEach(m => (unitOf[m.id] = u));
+    units.push(u);
+  }
+  for (const u of units) {
+    const blood = u.members.find(hasParents);
+    if (!blood) continue;
+    const pu = unitOf[blood.father && fam.p[blood.father] ? blood.father : blood.mother];
+    if (pu && pu !== u) { u.parent = pu; pu.children.push(u); }
+  }
+  const bloodOf = u => u.members.find(hasParents) || u.members[0];
+  for (const u of units) u.children.sort((a, b) => (bloodOf(a).birth || "").localeCompare(bloodOf(b).birth || ""));
+
+  const unitW = u => u.members.length * NODE_W + (u.members.length - 1) * SP_GAP;
+  const subW = u => (u._w ??= Math.max(unitW(u),
+    u.children.reduce((a, c) => a + subW(c), 0) + Math.max(0, u.children.length - 1) * SIB_GAP));
+  const anchorOffset = u => (u.members.length === 2 ? NODE_W + SP_GAP / 2 : NODE_W / 2);
+  const bloodCenter = u => {                                 // 子女單位中，與上一代相連的那個人的中心
+    const b = bloodOf(u), i = u.members.indexOf(b);
+    return u.x + i * (NODE_W + SP_GAP) + NODE_W / 2;
+  };
+
+  const minGen = Math.min(...Object.values(gen));
+  const pos = {};
+  const place = (u, x0) => {
+    let cx = x0 + (subW(u) - u.children.reduce((a, c) => a + subW(c), 0) - Math.max(0, u.children.length - 1) * SIB_GAP) / 2;
+    for (const c of u.children) { place(c, cx); cx += subW(c) + SIB_GAP; }
+    let x;
+    if (u.children.length) {
+      const mid = (bloodCenter(u.children[0]) + bloodCenter(u.children[u.children.length - 1])) / 2;
+      x = Math.min(Math.max(mid - anchorOffset(u), x0), x0 + subW(u) - unitW(u));
+    } else {
+      x = x0 + (subW(u) - unitW(u)) / 2;
+    }
+    u.x = x;
+    u.y = TOP + (gen[u.members[0].id] - minGen) * ROW_H;
+    u.members.forEach((m, i) => (pos[m.id] = { x: x + i * (NODE_W + SP_GAP), y: u.y }));
+  };
+  const roots = units.filter(u => !u.parent);
+  let x = MARGIN;
+  for (const r of roots) { place(r, x); x += subW(r) + SIB_GAP * 2; }
+  const maxGen = Math.max(...Object.values(gen));
+  return { units, unitOf, pos, width: x - SIB_GAP * 2 + MARGIN, height: TOP + (maxGen - minGen) * ROW_H + NODE_H + 70 };
+}
+
+function drawChart(fam, result, opts = {}) {
+  const { info, remarks } = classify(fam, result);
+  const L = layout(fam, result.decedentId);
+  const W = Math.max(L.width, 1040);
+
+  // 備註編號：依圖上位置由上而下、由左而右
+  const marked = Object.keys(remarks).filter(pid => L.pos[pid])
+    .sort((a, b) => L.pos[a].y - L.pos[b].y || L.pos[a].x - L.pos[b].x);
+  const markOf = Object.fromEntries(marked.map((pid, i) => [pid, i + 1]));
+  const NOTE_SIZE = 12.5, NOTE_LH = 21;
+  const perLine = Math.floor((W - MARGIN * 2 - 30) / NOTE_SIZE);
+  const wrap = t => { const c = [...t], out = []; for (let i = 0; i < c.length; i += perLine) out.push(c.slice(i, i + perLine).join("")); return out; };
+  const noteBlocks = marked.map(pid => {
+    const p = fam.p[pid];
+    return { n: markOf[pid], kind: remarks[pid].kind, lines: wrap(`${p.name}${p.title ? "（" + p.title + "）" : ""}：${remarks[pid].text}${(opts.remarkExtra || {})[pid] || ""}`) };
+  });
+  const notesH = noteBlocks.length ? 46 + noteBlocks.reduce((a, b) => a + b.lines.length * NOTE_LH + 4, 0) : 0;
+  const treeBottom = L.height - 70;
+  const H = treeBottom + 30 + notesH + 50;
+  const dec = fam.p[result.decedentId];
+  const svg = el("svg", { xmlns: SVGNS, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
+    "font-family": "'Microsoft JhengHei','PingFang TC','Noto Sans CJK TC','Noto Sans TC',sans-serif" });
+  svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: "#FFFFFF" }));
+
+  // 標題
+  svg.appendChild(el("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 26, "font-weight": 700, fill: "#1A1A1A" }, "繼承系統表"));
+  svg.appendChild(el("text", { x: W / 2, y: 72, "text-anchor": "middle", "font-size": 15, fill: "#333" },
+    `被繼承人：${dec.name}（${roc(result.openedOn)}死亡）　繼承順序：${result.order}`));
+
+  if (opts.note) svg.appendChild(el("text", { x: MARGIN, y: 100, "font-size": 13, "font-weight": 700, fill: "#B3261E" }, opts.note));
+
+  // 圖例
+  const legendW = k => 30 + [...KIND[k].label].length * 12.5 + 18;
+  let lx = W - MARGIN - Object.keys(KIND).reduce((a, k) => a + legendW(k), 0);
+  for (const k of Object.keys(KIND)) {
+    const g = el("g");
+    g.appendChild(el("rect", { x: lx, y: 88, width: 18, height: 14, rx: 3, fill: KIND[k].fill, stroke: KIND[k].stroke,
+      "stroke-dasharray": KIND[k].dashed ? "3 2" : "none" }));
+    g.appendChild(el("text", { x: lx + 24, y: 100, "font-size": 12, fill: "#444" }, KIND[k].label));
+    svg.appendChild(g); lx += legendW(k);
+  }
+
+  const lines = el("g", { stroke: "#4A4A4A", "stroke-width": 1.4, fill: "none" });
+  svg.appendChild(lines);
+
+  // 婚姻線與親子線
+  for (const u of L.units) {
+    const [a, b] = u.members;
+    let coupleMid = null;
+    if (b) {
+      const pa = L.pos[a.id], y = pa.y + NODE_H / 2;
+      lines.appendChild(el("line", { x1: pa.x + NODE_W, y1: y, x2: pa.x + NODE_W + SP_GAP, y2: y, "stroke-width": 2.4 }));
+      lines.appendChild(el("line", { x1: pa.x + NODE_W, y1: y - 4, x2: pa.x + NODE_W + SP_GAP, y2: y - 4, "stroke-width": 1 }));
+      coupleMid = { x: pa.x + NODE_W + SP_GAP / 2, y };
+    }
+    // 依「從哪裡出發」分組子女
+    const groups = {};
+    for (const c of Object.values(fam.p)) {
+      const ps = [c.father, c.mother].filter(pid => pid && u.members.some(m => m.id === pid));
+      if (!ps.length || !L.pos[c.id]) continue;
+      let src;
+      if (ps.length === 2 && coupleMid) src = coupleMid;
+      else { const pp = L.pos[ps[0]]; src = { x: pp.x + NODE_W / 2, y: pp.y + NODE_H }; }
+      const key = `${src.x},${src.y}`;
+      (groups[key] ||= { src, kids: [] }).kids.push(L.pos[c.id]);
+    }
+    for (const { src, kids } of Object.values(groups)) {
+      const busY = kids[0].y - 34;
+      const xs = kids.map(k => k.x + NODE_W / 2);
+      lines.appendChild(el("line", { x1: src.x, y1: src.y, x2: src.x, y2: busY }));
+      lines.appendChild(el("line", { x1: Math.min(src.x, ...xs), y1: busY, x2: Math.max(src.x, ...xs), y2: busY }));
+      for (const kx of xs) lines.appendChild(el("line", { x1: kx, y1: busY, x2: kx, y2: kids[0].y }));
+    }
+    if (coupleMid) svg.appendChild(el("circle", { cx: coupleMid.x, cy: coupleMid.y, r: 3.5, fill: "#4A4A4A" }));
+  }
+
+  // 人物方塊
+  for (const p of Object.values(fam.p)) {
+    const ps = L.pos[p.id]; if (!ps) continue;
+    const { kind, lines: extra } = info[p.id], k = KIND[kind];
+    const g = el("g");
+    if (kind === "decedent") {
+      g.appendChild(el("rect", { x: ps.x - 4, y: ps.y - 4, width: NODE_W + 8, height: NODE_H + 8, rx: 12, fill: "none", stroke: k.stroke, "stroke-width": 2 }));
+    }
+    g.appendChild(el("rect", { x: ps.x, y: ps.y, width: NODE_W, height: NODE_H, rx: 9, fill: k.fill, stroke: k.stroke,
+      "stroke-width": kind === "excluded" ? 1.2 : 1.8, "stroke-dasharray": k.dashed ? "5 3" : "none" }));
+    if (markOf[p.id]) {                                       // 備註編號
+      g.appendChild(el("text", { x: ps.x + NODE_W - 7, y: ps.y + 15, "text-anchor": "end", "font-size": 11.5, "font-weight": 700,
+        fill: kind === "renounced" ? "#B3261E" : "#555" }, `※${markOf[p.id]}`));
+    }
+
+    const rows = [];
+    if (p.title) rows.push({ t: p.title, size: 12, weight: 700 });
+    rows.push({ t: p.name, size: 16, weight: 600 });
+    if (p.birth) rows.push({ t: `${roc(p.birth)}生`, size: 10.5 });
+    if (p.death) rows.push({ t: `${roc(p.death)}歿`, size: 10.5 });
+    const plain = kind === "excluded" || kind === "renounced";
+    extra.forEach((t, i) => {
+      const last = i === extra.length - 1 && !plain;
+      rows.push({ t, size: last ? 12.5 : kind === "renounced" ? 11.5 : 10.5, weight: last || kind === "renounced" ? 700 : 400,
+        ink: kind === "renounced" || (t.includes("拋棄") || t.includes("喪失")) ? "#9C1F16" : null });
+    });
+    const lh = r => r.size + 4;
+    const total = rows.reduce((a, r) => a + lh(r), 0);
+    let ty = ps.y + (NODE_H - total) / 2;
+    const color = k.ink && kind === "excluded" ? k.ink : "#1A1A1A";
+    for (const r of rows) {
+      ty += lh(r);
+      const fit = Math.min(r.size, (NODE_W - 12) / Math.max(1, [...r.t].length) * 1.02);   // 太長就縮小字級
+      g.appendChild(el("text", { x: ps.x + NODE_W / 2, y: ty - 4, "text-anchor": "middle", "font-size": fit.toFixed(1),
+        "font-weight": r.weight || 400, fill: r.ink || (kind === "renounced" ? "#5A2A26" : color) }, r.t));
+    }
+    svg.appendChild(g);
+  }
+
+  // 備註欄
+  if (noteBlocks.length) {
+    let y = treeBottom + 30;
+    svg.appendChild(el("line", { x1: MARGIN, y1: y, x2: W - MARGIN, y2: y, stroke: "#BBBBBB", "stroke-width": 1 }));
+    svg.appendChild(el("text", { x: MARGIN, y: y + 28, "font-size": 15, "font-weight": 700, fill: "#1A1A1A" }, "備註"));
+    y += 46;
+    for (const b of noteBlocks) {
+      const ink = b.kind === "renounced" || b.kind === "lost" ? "#9C1F16" : "#333";
+      svg.appendChild(el("text", { x: MARGIN, y: y + 14, "font-size": NOTE_SIZE, "font-weight": 700, fill: ink }, `※${b.n}`));
+      b.lines.forEach((ln, i) => svg.appendChild(el("text", { x: MARGIN + 34, y: y + 14 + i * NOTE_LH, "font-size": NOTE_SIZE, fill: ink }, ln)));
+      y += b.lines.length * NOTE_LH + 4;
+    }
+  }
+
+  svg.appendChild(el("text", { x: MARGIN, y: H - 22, "font-size": 11, fill: "#777" },
+    "本表由離線系統依現行民法自動產生，僅供承辦參考，應與戶籍資料逐一核對後使用。"));
+  return svg;
+}
+
+/* ============================================================
+ * CSV 匯入／匯出
+ * - 自動辨識編碼：UTF-8（含 BOM）或 Big5（Excel 中文版預設）
+ * - 自動辨識分隔符號：逗號或 Tab
+ * - 父、母、配偶可填「姓名」或「編號」
+ * 純運算，不連網。
+ * ============================================================ */
+"use strict";
+
+const _parseDate = parseDate;
+
+const CSV_COLUMNS = {
+  id:       ["編號", "代號", "id", "ID"],
+  title:    ["稱謂", "關係", "身分", "身份"],
+  name:     ["姓名", "名字", "name"],
+  gender:   ["性別"],
+  birth:    ["出生日期", "出生", "生日", "出生年月日"],
+  death:    ["死亡日期", "死亡", "歿", "死亡年月日"],
+  father:   ["父", "父親", "父姓名"],
+  mother:   ["母", "母親", "母姓名"],
+  spouse:   ["配偶", "配偶姓名"],
+  renounced:["拋棄", "拋棄繼承"],
+  lost:     ["喪失", "喪失繼承權"],
+};
+const CSV_IGNORED = ["備註", "說明", "附註"];
+const YES = new Set(["是", "y", "Y", "yes", "YES", "v", "V", "✓", "✔", "1", "o", "O", "○", "拋棄", "喪失", "TRUE", "true"]);
+
+/* 位元組 → 文字：先試 UTF-8，失敗就用 Big5 */
+function decodeBytes(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let text, encoding;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); encoding = "UTF-8"; }
+  catch { text = new TextDecoder("big5").decode(bytes); encoding = "Big5"; }
+  return { text: text.replace(/^﻿/, ""), encoding };
+}
+
+/* 解析 CSV 文字成二維陣列（支援引號、欄位內換行、CRLF） */
+function parseCsvText(text) {
+  const lines = text.split(/\r?\n/, 30);
+  const firstLine = lines.find(l => CSV_COLUMNS.name.some(n => l.includes(n))) || lines[0] || "";   // 以標題列判斷
+  const delim = (firstLine.match(/\t/g) || []).length > (firstLine.match(/,/g) || []).length ? "\t" : ",";
+  const rows = [];
+  let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"' && field === "") inQ = true;
+    else if (c === delim) { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(v => v.trim() !== ""));
+}
+
+/* CSV 文字 → 系統資料格式；回傳 { data, errors, warnings } */
+function importCsv(text) {
+  const errors = [], warnings = [];
+  const rows = parseCsvText(text);
+  if (!rows.length) return { data: null, errors: ["檔案是空的"], warnings };
+
+  // 找標題列（允許前面有幾列說明文字）
+  let headerIdx = rows.findIndex(r => r.some(v => CSV_COLUMNS.name.includes(v.trim())));
+  if (headerIdx < 0) return { data: null, errors: ["找不到「姓名」欄位。第一列應為欄位名稱，例如：稱謂、姓名、性別、出生日期……"], warnings };
+  const header = rows[headerIdx].map(v => v.trim());
+  const col = {};
+  header.forEach((h, i) => {
+    const key = Object.keys(CSV_COLUMNS).find(k => CSV_COLUMNS[k].includes(h));
+    if (key && !(key in col)) col[key] = i;
+    else if (h && !key && !CSV_IGNORED.includes(h)) warnings.push(`欄位「${h}」無法辨識，已略過`);
+  });
+
+  const get = (r, key) => (key in col ? (r[col[key]] || "").trim() : "");
+  const lineNo = i => i + headerIdx + 2;            // 對應 Excel 的列號
+  const body = rows.slice(headerIdx + 1);
+
+  // 第一輪：建立人員與編號
+  const persons = [], usedIds = new Set();
+  body.forEach(r => { const id = get(r, "id"); if (id) usedIds.add(id); });
+  let seq = 1;
+  const nextId = () => { while (usedIds.has(`P${String(seq).padStart(2, "0")}`)) seq++; const id = `P${String(seq++).padStart(2, "0")}`; usedIds.add(id); return id; };
+  const seenIds = new Set();
+  body.forEach((r, i) => {
+    const name = get(r, "name");
+    if (!name) { warnings.push(`第 ${lineNo(i)} 列沒有姓名，已略過`); return; }
+    let id = get(r, "id");
+    if (id && seenIds.has(id)) { errors.push(`第 ${lineNo(i)} 列：編號「${id}」重複`); return; }
+    if (!id) id = nextId();
+    seenIds.add(id);
+    const g = get(r, "gender");
+    const gender = /^(男|M|m|1)$/.test(g) ? "M" : /^(女|F|f|2)$/.test(g) ? "F" : "";
+    if (g && !gender) warnings.push(`第 ${lineNo(i)} 列：性別「${g}」無法辨識，請填男或女`);
+    persons.push({ _row: lineNo(i), _r: r, id, name, title: get(r, "title"), gender,
+      birth: get(r, "birth"), death: get(r, "death") });
+  });
+
+  // 姓名 → 人員（偵測同名）
+  const byName = {}, byId = {};
+  for (const p of persons) { (byName[p.name] ||= []).push(p); byId[p.id] = p; }
+  for (const [n, list] of Object.entries(byName)) {
+    if (list.length > 1) warnings.push(`有 ${list.length} 人同名「${n}」（第 ${list.map(p => p._row).join("、")} 列），參照此人時請改填編號`);
+  }
+  const resolve = (value, p, label) => {
+    if (!value) return null;
+    if (byId[value]) return byId[value].id;
+    const list = byName[value];
+    if (!list) { errors.push(`第 ${p._row} 列（${p.name}）：${label}「${value}」不在名單中，請先將此人加入名單`); return null; }
+    if (list.length > 1) { errors.push(`第 ${p._row} 列（${p.name}）：${label}「${value}」有同名者，請改填編號`); return null; }
+    if (list[0] === p) { errors.push(`第 ${p._row} 列（${p.name}）：${label}不能填自己`); return null; }
+    return list[0].id;
+  };
+
+  // 被繼承人：稱謂為「被繼承人」者
+  const decs = persons.filter(p => p.title.replace(/\s/g, "") === "被繼承人");
+  if (decs.length > 1) warnings.push(`有 ${decs.length} 列稱謂為「被繼承人」，已選第一位，請確認`);
+  if (!decs.length) warnings.push("沒有稱謂為「被繼承人」的列，請匯入後在上方選擇被繼承人");
+  const decedent = decs[0] ? decs[0].id : "";
+
+  // 第二輪：關係與拋棄
+  const listOf = (value, p, label) => {
+    if (!value) return [];
+    return value.split(/[、,，;；\/\s]+/).filter(Boolean).flatMap(v => {
+      if (YES.has(v)) {
+        if (!decedent) { warnings.push(`第 ${p._row} 列（${p.name}）：${label}填「${v}」，但尚未指定被繼承人`); return []; }
+        return [decedent];
+      }
+      const id = resolve(v, p, `${label}之對象`);
+      return id ? [id] : [];
+    });
+  };
+  for (const p of persons) {
+    const r = p._r;
+    p.father = resolve(get(r, "father"), p, "父");
+    p.mother = resolve(get(r, "mother"), p, "母");
+    p.spouse = resolve(get(r, "spouse"), p, "配偶");
+    p.renounced = listOf(get(r, "renounced"), p, "拋棄");
+    p.lost_right = listOf(get(r, "lost"), p, "喪失");
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
+      if (p[k] && _parseDate(p[k]) === undefined) warnings.push(`第 ${p._row} 列（${p.name}）：${label}「${p[k]}」格式無法辨識，匯入後請修正`);
+    }
+  }
+  // 配偶互填不一致
+  for (const p of persons) {
+    const s = p.spouse && byId[p.spouse];
+    if (s && s.spouse && s.spouse !== p.id) warnings.push(`${p.name} 與 ${s.name} 的配偶欄互相不一致，請確認`);
+  }
+
+  const data = { decedent, persons: persons.map(({ _row, _r, ...rest }) => rest) };
+  return { data: errors.length ? null : data, errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
+}
+
+/* 系統資料 → CSV 文字（UTF-8 BOM，Excel 可直接開啟） */
+function exportCsv(persons, decedent) {
+  const count = {};
+  persons.forEach(p => (count[p.name] = (count[p.name] || 0) + 1));
+  const byId = Object.fromEntries(persons.map(p => [p.id, p]));
+  const ref = id => (!id || !byId[id] ? "" : count[byId[id].name] > 1 ? id : byId[id].name);   // 同名才用編號
+  const rocText = iso => {
+    const d = _parseDate(iso);
+    if (!d) return iso || "";
+    const [y, m, dd] = d.split("-").map(Number);
+    return y > 1911 ? `民國${y - 1911}年${m}月${dd}日` : `${y}/${m}/${dd}`;   // 用中文日期，避免 Excel 誤判兩位數民國年
+  };
+  const marks = list => list.map(t => (t === decedent ? "是" : ref(t))).filter(Boolean).join("、");
+  const esc = v => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const lines = [["編號", "稱謂", "姓名", "性別", "出生日期", "死亡日期", "父", "母", "配偶", "拋棄", "喪失"]];
+  for (const p of persons) {
+    lines.push([p.id, p.title || "", p.name || "", p.gender === "M" ? "男" : p.gender === "F" ? "女" : "",
+      rocText(p.birth), rocText(p.death), ref(p.father), ref(p.mother), ref(p.spouse),
+      marks(p.renounced || []), marks(p.lost_right || [])]);
+  }
+  return "﻿" + lines.map(r => r.map(v => esc(String(v))).join(",")).join("\r\n") + "\r\n";
+}
+
+// module.exports = { decodeBytes, parseCsvText, importCsv, exportCsv };
+
+/* ============================================================
+ * 戶籍資料匯入與串聯
+ * - 親等關聯資料（二親等、三親等）：每份以一位「本人」為中心，稱謂相對於本人
+ * - 個人戶籍資料：一人一列，無稱謂
+ * - 以統一編號合併同一人，再依「稱謂」與「父、母、配偶姓名」建立親屬關係
+ * - 只補空白的關係，不覆蓋使用者手動設定的資料
+ * 純運算，不連網。
+ * ============================================================ */
+"use strict";
+
+const { parseDate: hhrDate } = typeof parseDate === "function" ? { parseDate } : require("./engine.js");
+const { parseCsvText: hhrCsv } = typeof parseCsvText === "function" ? { parseCsvText } : require("./csv.js");
+
+const HHR_FIELDS = [
+  { key: "relation",   label: "稱謂（相對於本人）", kinds: ["kin"], required: ["kin"],
+    syn: ["稱謂", "關係", "親屬關係", "與本人關係", "親等關係", "稱謂關係", "與查詢人關係"] },
+  { key: "name",       label: "姓名", kinds: ["kin", "personal"], required: ["kin", "personal"],
+    syn: ["姓名", "名字", "本人姓名", "親屬姓名"] },
+  { key: "uid",        label: "統一編號", kinds: ["kin", "personal"], required: ["kin", "personal"],
+    syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "本人統一編號", "親屬統一編號"] },
+  { key: "gender",     label: "性別", kinds: ["kin", "personal"], syn: ["性別"] },
+  { key: "birth",      label: "出生日期", kinds: ["kin", "personal"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
+  { key: "death",      label: "死亡日期", kinds: ["kin", "personal"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
+  { key: "fatherName", label: "父姓名", kinds: ["kin", "personal"], syn: ["父姓名", "父親姓名", "父", "父親"] },
+  { key: "motherName", label: "母姓名", kinds: ["kin", "personal"], syn: ["母姓名", "母親姓名", "母", "母親"] },
+  { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal"], syn: ["配偶姓名", "配偶", "配偶名"] },
+  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父身分證統一編號", "父身分證字號"] },
+  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母身分證統一編號", "母身分證字號"] },
+  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶身分證統一編號", "配偶身分證字號"] },
+];
+
+const normHeader = h => String(h || "").replace(/[\s　]/g, "").replace(/（/g, "(").replace(/）/g, ")");
+const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
+
+/* 稱謂分類（相對於本人） */
+const REL = {
+  self:    /^本人$/,
+  father:  /^(父|父親|養父)$/,
+  mother:  /^(母|母親|養母)$/,
+  spouse:  /^(配偶|夫|妻|丈夫|妻子|先生|太太)$/,
+  child:   /^((長|次|三|四|五|六|七|八|九|十)?(男|女|子)|兒子|女兒|子女|養子|養女|長孫)$/,
+  sibling: /^(兄|弟|姊|姐|妹|兄弟|姊妹|姐妹|兄弟姊妹)$/,
+  // 以下依父母姓名串聯即可
+  other:   /^(外?祖父|外?祖母|外?祖父母|外?曾祖父|外?曾祖母|外?孫|外?孫子|外?孫女|外?孫子女|外?曾孫|外?曾孫女|姪|姪子|姪女|外?甥|外?甥女|伯父|伯母|叔父|嬸|嬸嬸|姑|姑母|姑丈|舅|舅父|舅媽|姨|姨母|姨丈|媳|媳婦|婿|女婿)$/,
+};
+function genderFromRelation(rel) {
+  if (/^(父|父親|養父|夫|丈夫|先生|兄|弟|祖父|外祖父|曾祖父|伯父|叔父|舅|姪|外甥|孫|外孫|曾孫|姪子|孫子|外孫子|女婿|婿)$/.test(rel) ||
+      /^(長|次|三|四|五|六|七|八|九|十)?男$|^(兒子|養子)$/.test(rel)) return "M";
+  if (/^(母|母親|養母|妻|妻子|太太|姊|姐|妹|祖母|外祖母|曾祖母|伯母|嬸|姑|姨|舅媽|姪女|外甥女|孫女|外孫女|曾孫女|媳|媳婦)$/.test(rel) ||
+      /^(長|次|三|四|五|六|七|八|九|十)?女$|^(女兒|養女)$/.test(rel)) return "F";
+  return "";
+}
+function rocOf(raw) {
+  const iso = hhrDate(raw);
+  if (!iso) return raw || "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return y > 1911 ? `${y - 1911}/${m}/${d}` : iso;
+}
+function maskUid(uid) {
+  uid = normUid(uid);
+  return uid.length >= 8 ? uid.slice(0, 3) + "*".repeat(uid.length - 6) + uid.slice(-3) : uid;
+}
+
+/* ---------- 讀檔 ---------- */
+function hhrReadTable(text) {
+  const rows = hhrCsv(text);
+  const names = HHR_FIELDS.find(f => f.key === "name").syn;
+  const idx = rows.findIndex(r => r.some(v => names.includes(normHeader(v))));
+  if (idx < 0) return { headers: rows[0] || [], body: rows.slice(1), headerRow: 1 };
+  return { headers: rows[idx].map(h => String(h).trim()), body: rows.slice(idx + 1), headerRow: idx + 1 };
+}
+
+function hhrGuessMapping(headers) {
+  const map = {};
+  const norm = headers.map(normHeader);
+  const stripped = norm.map(h => h.replace(/\(.*?\)/g, ""));
+  for (const f of HHR_FIELDS) {
+    let i = norm.findIndex(h => f.syn.includes(h));
+    if (i < 0) i = stripped.findIndex(h => f.syn.includes(h));
+    if (i >= 0 && !Object.values(map).includes(i)) map[f.key] = i;
+  }
+  return map;
+}
+
+/* 判斷檔案種類：kin 親等關聯、personal 個人戶籍、simple 本系統 CSV 格式 */
+function hhrGuessKind(headers) {
+  const m = hhrGuessMapping(headers);
+  if ("uid" in m && "relation" in m) return "kin";
+  if ("uid" in m) return "personal";
+  return "simple";
+}
+
+/* ---------- 解析 ---------- */
+function hhrParse(table, mapping, kind) {
+  const errors = [], warnings = [], records = [];
+  const fields = HHR_FIELDS.filter(f => f.kinds.includes(kind));
+  for (const f of fields) {
+    if ((f.required || []).includes(kind) && !(f.key in mapping)) errors.push(`缺少必要欄位：${f.label}`);
+  }
+  if (errors.length) return { records, anchorUid: null, errors, warnings };
+
+  const seen = new Set();
+  table.body.forEach((r, i) => {
+    const line = i + table.headerRow + 1;
+    const get = k => (k in mapping ? String(r[mapping[k]] ?? "").trim() : "");
+    const name = get("name"), uid = normUid(get("uid"));
+    if (!name && !uid) return;
+    if (!uid) { warnings.push(`第 ${line} 列（${name}）沒有統一編號，已略過`); return; }
+    if (!name) { warnings.push(`第 ${line} 列（${maskUid(uid)}）沒有姓名，已略過`); return; }
+    if (seen.has(uid)) { warnings.push(`第 ${line} 列（${name}）統一編號在本檔重複出現，已略過重複列`); return; }
+    seen.add(uid);
+    const relation = get("relation").replace(/[\s　]/g, "");
+    const g = get("gender");
+    const gender = /^(男|M|m|1)$/.test(g) ? "M" : /^(女|F|f|2)$/.test(g) ? "F" : genderFromRelation(relation);
+    const rec = { line, uid, name, gender, relation, birth: get("birth"), death: get("death"),
+      fatherName: get("fatherName"), motherName: get("motherName"), spouseName: get("spouseName"),
+      fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")) };
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
+      if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
+    }
+    records.push(rec);
+  });
+
+  let anchorUid = null;
+  if (kind === "kin") {
+    const selves = records.filter(r => REL.self.test(r.relation));
+    if (!selves.length) errors.push("找不到稱謂為「本人」的列，無法判斷其他人與本人的關係");
+    else {
+      anchorUid = selves[0].uid;
+      if (selves.length > 1) warnings.push(`有 ${selves.length} 列稱謂為「本人」，以第一列（${selves[0].name}）為本人`);
+    }
+    const unknown = [...new Set(records.map(r => r.relation).filter(r => r && !Object.values(REL).some(re => re.test(r))))];
+    if (unknown.length) warnings.push(`以下稱謂改依父母姓名判斷關係：${unknown.join("、")}`);
+  }
+  if (!records.length) errors.push("檔案中沒有可匯入的資料列");
+  return { records, anchorUid, errors, warnings };
+}
+
+/* ---------- 合併（以統一編號為準） ---------- */
+function hhrMerge(persons, parsed, fileName, makeId) {
+  const conflicts = [];
+  let added = 0, updated = 0;
+  const LABEL = { name: "姓名", gender: "性別", birthRaw: "出生日期", deathRaw: "死亡日期",
+    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名" };
+  const same = (a, b) => (hhrDate(a) || a) === (hhrDate(b) || b);
+  for (const rec of parsed.records) {
+    let p = persons.find(x => normUid(x.uid) === rec.uid);
+    if (!p) {
+      p = { id: persons.some(x => x.id === rec.uid) ? makeId() : rec.uid, uid: rec.uid, name: "", title: "", titleAuto: true,
+        gender: "", birthRaw: "", deathRaw: "", father: "", mother: "", spouse: "",
+        fatherName: "", motherName: "", spouseName: "", fatherUid: "", motherUid: "", spouseUid: "",
+        renounceChecks: {}, lost_right: [], sources: [] };
+      persons.push(p); added++;
+    }
+    const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
+      fatherName: rec.fatherName, motherName: rec.motherName, spouseName: rec.spouseName,
+      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid };
+    let changed = false;
+    for (const [k, v] of Object.entries(incoming)) {
+      if (!v) continue;
+      if (!p[k]) { p[k] = v; changed = true; }
+      else if (!same(p[k], v) && LABEL[k]) {
+        conflicts.push(`${p.name || rec.name}（${maskUid(rec.uid)}）的${LABEL[k]}不一致：原有「${p[k]}」，${fileName} 為「${v}」，暫保留原有資料，請確認`);
+      }
+    }
+    if (!(p.sources ||= []).includes(fileName)) p.sources.push(fileName);
+    if (changed && added === 0) updated++;
+  }
+  return { added, updated, conflicts };
+}
+
+/* ---------- 串聯親屬關係 ---------- */
+// files：[{ name, kind, anchor, rels: [{uid, relation}] }]
+function hhrLink(persons, files) {
+  const warnings = [];
+  const byUid = {}, byId = {}, byName = {};
+  for (const p of persons) {
+    byId[p.id] = p;
+    if (p.uid) byUid[normUid(p.uid)] = p;
+    if (p.name) (byName[p.name] ||= []).push(p);
+  }
+  const birthOf = p => hhrDate(p.birthRaw) || "";
+  const label = p => `${p.name}（${maskUid(p.uid)}）`;
+  const setParent = (child, rel, parent) => {
+    if (!child || !parent || child === parent || child[rel] === parent.id) return;
+    if (child[rel]) {
+      warnings.push(`${label(child)}的${rel === "father" ? "父" : "母"}已設為 ${byId[child[rel]]?.name || "其他人"}，與資料中的 ${parent.name} 不同，請確認`);
+      return;
+    }
+    child[rel] = parent.id;
+  };
+  const setSpouse = (a, b) => {
+    if (!a || !b || a === b) return;
+    if (a.spouse && a.spouse !== b.id) { warnings.push(`${label(a)}的配偶已設為 ${byId[a.spouse]?.name}，與資料中的 ${b.name} 不同，請確認`); return; }
+    if (b.spouse && b.spouse !== a.id) { warnings.push(`${label(b)}的配偶已設為 ${byId[b.spouse]?.name}，與資料中的 ${a.name} 不同，請確認`); return; }
+    a.spouse = b.id; b.spouse = a.id;
+  };
+
+  // 1. 統一編號直接指定
+  for (const p of persons) {
+    if (p.fatherUid && byUid[p.fatherUid]) setParent(p, "father", byUid[p.fatherUid]);
+    if (p.motherUid && byUid[p.motherUid]) setParent(p, "mother", byUid[p.motherUid]);
+    if (p.spouseUid && byUid[p.spouseUid]) setSpouse(p, byUid[p.spouseUid]);
+  }
+
+  // 2. 親等關聯資料：依稱謂與本人的關係
+  for (const f of files.filter(f => f.kind === "kin")) {
+    const A = byUid[f.anchor];
+    if (!A) continue;
+    for (const { uid, relation } of f.rels) {
+      const R = byUid[uid];
+      if (!R || R === A) continue;
+      if (REL.father.test(relation)) setParent(A, "father", R);
+      else if (REL.mother.test(relation)) setParent(A, "mother", R);
+      else if (REL.spouse.test(relation)) setSpouse(A, R);
+      else if (REL.child.test(relation)) {
+        const rel = R.fatherName && R.fatherName === A.name ? "father"
+          : R.motherName && R.motherName === A.name ? "mother"
+          : A.gender === "M" ? "father" : A.gender === "F" ? "mother" : null;
+        if (rel) setParent(R, rel, A);
+        else warnings.push(`無法判斷 ${A.name} 是 ${R.name} 的父或母（缺少性別），請手動設定`);
+      }
+    }
+  }
+
+  // 3. 依姓名配對其餘關係（優先同一份檔案中的人）
+  const shareFile = (a, b) => (a.sources || []).some(s => (b.sources || []).includes(s));
+  const pick = (p, cands) => {
+    if (cands.length <= 1) return cands;
+    const near = cands.filter(c => shareFile(p, c));
+    return near.length ? near : cands;
+  };
+  for (const p of persons) {
+    for (const rel of ["father", "mother"]) {
+      const nm = p[rel + "Name"];
+      if (p[rel] || !nm) continue;
+      let cands = (byName[nm] || []).filter(c => c !== p &&
+        (rel === "father" ? c.gender !== "F" : c.gender !== "M") &&
+        !(birthOf(c) && birthOf(p) && birthOf(c) >= birthOf(p)));
+      cands = pick(p, cands);
+      if (cands.length === 1) setParent(p, rel, cands[0]);
+      else if (cands.length > 1) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}「${nm}」有 ${cands.length} 位同名者，請手動指定`);
+    }
+    if (!p.spouse && p.spouseName) {
+      let cands = (byName[p.spouseName] || []).filter(c => c !== p && (!c.spouse || c.spouse === p.id) &&
+        (!c.spouseName || c.spouseName === p.name));
+      cands = pick(p, cands);
+      if (cands.length === 1) setSpouse(p, cands[0]);
+      else if (cands.length > 1) warnings.push(`${label(p)}的配偶「${p.spouseName}」有 ${cands.length} 位同名者，請手動指定`);
+    }
+  }
+
+  // 4. 一致性檢查：已連結的父母姓名與資料記載不同
+  for (const p of persons) {
+    for (const rel of ["father", "mother"]) {
+      const q = byId[p[rel]], nm = p[rel + "Name"];
+      if (q && nm && q.name !== nm) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
+    }
+  }
+  return { warnings: [...new Set(warnings)] };
+}
+
+// module.exports = { HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+
+/* ============================================================
+ * 承辦作業輔助
+ * - autoTitles：依被繼承人換算稱謂（戶籍資料的稱謂是相對於各檔的「本人」）
+ * - followUps：判斷還需要往下調閱誰的資料
+ * - renounceItems：需查證拋棄繼承的人員清單
+ * 純運算，不連網。
+ * ============================================================ */
+"use strict";
+
+const { parseDate: cwDate } = typeof parseDate === "function" ? { parseDate } : require("./engine.js");
+
+const ORD = ["長", "次", "三", "四", "五", "六", "七", "八", "九", "十"];
+
+/* persons：介面資料（birthRaw）或引擎資料（birth）皆可 */
+function autoTitles(persons, decId) {
+  const T = {};
+  const byId = Object.fromEntries(persons.map(p => [p.id, p]));
+  const dec = byId[decId];
+  if (!dec) return T;
+  const birth = p => p.birth || cwDate(p.birthRaw) || "";
+  const kids = id => persons.filter(x => x.father === id || x.mother === id).sort((a, b) => birth(a).localeCompare(birth(b)));
+  const set = (p, t) => { if (p && t && !T[p.id]) T[p.id] = t; };
+
+  set(dec, "被繼承人");
+  set(byId[dec.spouse], "配偶");
+  const fa = byId[dec.father], mo = byId[dec.mother];
+  set(fa, "父"); set(mo, "母");
+  if (fa) { set(byId[fa.father], "祖父"); set(byId[fa.mother], "祖母"); }
+  if (mo) { set(byId[mo.father], "外祖父"); set(byId[mo.mother], "外祖母"); }
+
+  // 子女與孫輩
+  const children = kids(dec.id);
+  const count = { M: 0, F: 0 };
+  for (const c of children) {
+    if (c.gender === "M" || c.gender === "F") set(c, `${ORD[count[c.gender]++] || ""}${c.gender === "M" ? "男" : "女"}`);
+    else set(c, "子女");
+  }
+  for (const c of children) {
+    const viaSon = c.gender === "M";
+    for (const g of kids(c.id)) {
+      set(g, g.gender === "M" ? (viaSon ? "孫" : "外孫") : g.gender === "F" ? (viaSon ? "孫女" : "外孫女") : "孫子女");
+      for (const gg of kids(g.id)) set(gg, `${viaSon ? "" : "外"}曾孫${gg.gender === "F" ? "女" : ""}`);
+    }
+  }
+
+  // 兄弟姊妹及其子女
+  const parents = [dec.father, dec.mother].filter(Boolean);
+  const sibs = persons.filter(x => x.id !== dec.id && [x.father, x.mother].some(v => v && parents.includes(v)));
+  for (const s of sibs) {
+    const older = birth(s) && birth(dec) ? birth(s) < birth(dec) : null;
+    set(s, s.gender === "M" ? (older === null ? "兄弟" : older ? "兄" : "弟")
+      : s.gender === "F" ? (older === null ? "姊妹" : older ? "姊" : "妹") : "兄弟姊妹");
+    for (const n of kids(s.id)) set(n, s.gender === "F" ? `外甥${n.gender === "F" ? "女" : ""}` : `姪${n.gender === "F" ? "女" : ""}`);
+  }
+
+  // 已有稱謂者的配偶
+  for (const p of persons) {
+    if (T[p.id] || !p.spouse || !T[p.spouse] || p.spouse === decId) continue;
+    T[p.id] = `${T[p.spouse]}之配偶`;
+  }
+  return T;
+}
+
+/* 待調閱清單
+ * fam：引擎 Family；result：計算結果；queried：已調閱親等資料（或已確認）之人員 id
+ * 回傳 [{ level: "必要"|"建議", pid, text }]
+ */
+function followUps(fam, result, queried) {
+  const out = [], seen = new Set();
+  const add = (level, pid, text) => { const k = pid + text; if (!seen.has(k)) { seen.add(k); out.push({ level, pid, text }); } };
+  const nm = id => fam.p[id]?.name || id;
+  const did = result.decedentId;
+  const isDesc = (pid, root) => { const p = fam.p[pid]; return !!p && [p.father, p.mother].some(x => x && (x === root || isDesc(x, root))); };
+
+  if (!queried.has(did)) add("必要", did, `尚未匯入被繼承人${nm(did)}本人的親等關聯資料，請先調閱，以確認配偶、子女、父母及兄弟姊妹。`);
+
+  const walk = (res, isSub) => {
+    const subName = isSub ? `（${nm(res.decedentId)}之再轉繼承部分）` : "";
+    for (const [pid, note] of Object.entries(res.notes)) {
+      if (!["繼承開始前死亡", "喪失繼承權"].includes(note) || !isDesc(pid, res.decedentId) || queried.has(pid)) continue;
+      const reps = res.represents[pid];
+      if (!reps) add("必要", pid, `${nm(pid)}${note === "喪失繼承權" ? "喪失繼承權" : "於繼承開始前死亡"}，資料中查無其直系血親卑親屬${subName}。請調閱${nm(pid)}的二親等資料，確認有無代位繼承人。`);
+      else add("建議", pid, `${nm(pid)}${note === "喪失繼承權" ? "喪失繼承權" : "於繼承開始前死亡"}，目前由 ${reps.map(nm).join("、")} 代位繼承${subName}。如需確認子女是否完整，可調閱${nm(pid)}的二親等或個人戶籍資料。`);
+    }
+    for (const [hid, sub] of Object.entries(res.retransfers)) {
+      if (!queried.has(hid)) add("必要", hid, `${nm(hid)}於繼承開始後死亡（再轉繼承）。請調閱${nm(hid)}的二親等資料，確認其配偶、子女等繼承人${sub.shares.length ? `（目前資料中有：${sub.shares.map(s => nm(s.id)).join("、")}）` : ""}。`);
+      walk(sub, true);
+    }
+  };
+  walk(result, false);
+
+  // 無第一順序時，父母的存歿必須確認
+  const dec = fam.p[did];
+  if (result.order !== "第一順序") {
+    for (const [rel, label] of [["father", "父"], ["mother", "母"]]) {
+      if (!dec[rel] && dec[rel + "Name"]) add("必要", did, `無第一順序繼承人，需確認被繼承人之${label}${dec[rel + "Name"]}的存歿，但此人不在資料中。請調閱其個人戶籍資料。`);
+    }
+  }
+  return out;
+}
+
+/* 需查證拋棄繼承的人：各層繼承人中，繼承開始時生存者
+ * 回傳 [{ pid, target }]，target 為該層被繼承人（原被繼承人或再轉被繼承人）
+ */
+function renounceItems(fam, result) {
+  const out = [], seen = new Set();
+  const walk = res => {
+    for (const s of res.shares) {
+      if (res.retransfers[s.id]) continue;            // 繼承開始後死亡者，由其繼承人處理
+      const k = `${s.id}|${res.decedentId}`;
+      if (!seen.has(k)) { seen.add(k); out.push({ pid: s.id, target: res.decedentId }); }
+    }
+    Object.values(res.retransfers).forEach(walk);
+  };
+  walk(result);
+  return out;
+}
+
+// module.exports = { autoTitles, followUps, renounceItems };
+
+/* ============================================================
+ * 最小 .xlsx 產生器（不依賴外部套件，離線可用）
+ * 以 ZIP「儲存」模式（不壓縮）打包 Office Open XML
+ * rows：[[{ v: 值, s: 樣式編號 }...]...]
+ * 樣式：0 一般、1 標題、2 表頭、3 內容（框線）、4 內容靠右（框線）、5 粗體、6 小字說明
+ * ============================================================ */
+"use strict";
+
+const XLSX_CRC = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function xlsxCrc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = XLSX_CRC[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function xlsxZip(files) {                                  // files: [{ name, data: Uint8Array }]
+  const enc = new TextEncoder(), parts = [], central = [];
+  let offset = 0;
+  const u16 = v => [v & 0xFF, (v >>> 8) & 0xFF];
+  const u32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = xlsxCrc32(f.data), size = f.data.length;
+    const local = new Uint8Array([...u32(0x04034B50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21),
+      ...u32(crc), ...u32(size), ...u32(size), ...u16(name.length), ...u16(0)]);
+    parts.push(local, name, f.data);
+    central.push(new Uint8Array([...u32(0x02014B50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21),
+      ...u32(crc), ...u32(size), ...u32(size), ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset)]), name);
+    offset += local.length + name.length + size;
+  }
+  const cdSize = central.reduce((a, b) => a + b.length, 0);
+  const end = new Uint8Array([...u32(0x06054B50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(offset), ...u16(0)]);
+  return new Blob([...parts, ...central, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+function xlsxEsc(s) {
+  return String(s ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function xlsxCol(i) { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+
+/* opts: { sheetName, widths: [欄寬], merges: ["A1:I1"], landscape: false } */
+function buildXlsx(rows, opts = {}) {
+  const enc = new TextEncoder();
+  const sheetRows = rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((c, ci) => {
+    if (c === null || c === undefined) return "";
+    const cell = typeof c === "object" ? c : { v: c };
+    const ref = `${xlsxCol(ci)}${ri + 1}`, s = cell.s ? ` s="${cell.s}"` : "";
+    if (cell.v === "" || cell.v === null || cell.v === undefined) return `<c r="${ref}"${s}/>`;
+    return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${xlsxEsc(cell.v)}</t></is></c>`;
+  }).join("") + "</row>").join("");
+  const cols = (opts.widths || []).map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("");
+  const merges = (opts.merges || []).length ? `<mergeCells count="${opts.merges.length}">${opts.merges.map(m => `<mergeCell ref="${m}"/>`).join("")}</mergeCells>` : "";
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${cols ? `<cols>${cols}</cols>` : ""}<sheetData>${sheetRows}</sheetData>${merges}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="${opts.landscape ? "landscape" : "portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  const font = (extra = "") => `<font>${extra}<sz val="11"/><name val="Microsoft JhengHei"/><family val="2"/></font>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4">${font()}${font("<b/>")}<font><b/><sz val="16"/><name val="Microsoft JhengHei"/><family val="2"/></font><font><sz val="9"/><name val="Microsoft JhengHei"/><family val="2"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE4EFEB"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="top"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top"/></xf>
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const name = xlsxEsc(opts.sheetName || "繼承系統表");
+  const files = [
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${name}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/worksheets/sheet1.xml", sheet],
+    ["xl/styles.xml", styles],
+  ];
+  return xlsxZip(files.map(([n, d]) => ({ name: n, data: enc.encode(d) })));
+}
+
+// module.exports = { buildXlsx, xlsxCrc32 };
+
+/* ============================================================
+ * 介面：資料輸入、戶籍資料匯入、檢查、產生系統表、拋棄查證、列印
+ * 個人資料只存在記憶體，不寫入瀏覽器儲存空間。
+ * （僅「欄位對應設定」會記在瀏覽器中，內容只有欄位名稱，不含個人資料）
+ * ============================================================ */
+"use strict";
+
+const state = { persons: [], decedent: "", seq: 1, queried: new Set(), files: [], demoStep: 0, view: "tree", showFullUid: false };
+const $ = sel => document.querySelector(sel);
+const KIND_LABEL = { kin: "親等關聯資料", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
+const STATUS_LABEL = { "": "未查證", none: "查無拋棄", yes: "已拋棄" };
+
+function isoToRoc(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return y > 1911 ? `${y - 1911}/${m}/${d}` : iso;
+}
+function todayRoc() { const d = new Date(); return `${d.getFullYear() - 1911}/${d.getMonth() + 1}/${d.getDate()}`; }
+function newId() {
+  const ids = new Set(state.persons.map(p => p.id));
+  while (ids.has(`P${String(state.seq).padStart(2, "0")}`)) state.seq++;
+  return `P${String(state.seq++).padStart(2, "0")}`;
+}
+function blankPerson() {
+  return { id: newId(), uid: "", name: "", title: "", titleAuto: true, gender: "", birthRaw: "", deathRaw: "",
+    father: "", mother: "", spouse: "", fatherName: "", motherName: "", spouseName: "",
+    fatherUid: "", motherUid: "", spouseUid: "", renounceChecks: {}, lost_right: [], sources: [] };
+}
+const byId = id => state.persons.find(p => p.id === id);
+const uidShow = u => (state.showFullUid ? (u || "") : maskUid(u || ""));
+const renouncedOf = p => Object.entries(p.renounceChecks || {}).filter(([, v]) => v.status === "yes").map(([k]) => k);
+function hasData() { return state.persons.length > 0; }
+function resetCase() { state.persons = []; state.decedent = ""; state.seq = 1; state.queried = new Set(); state.files = []; state.demoStep = 0; }
+
+/* ---------- 載入（取代）/ 匯出 ---------- */
+function loadData(raw) {
+  if (!raw || !Array.isArray(raw.persons)) throw new Error("檔案格式不正確：找不到 persons 清單");
+  resetCase();
+  state.persons = raw.persons.map(r => {
+    const p = Object.assign(blankPerson(), {
+      id: String(r.id), uid: r.uid || "", name: r.name || "", title: r.title || "",
+      titleAuto: r.titleAuto !== undefined ? !!r.titleAuto : !r.title, gender: r.gender || "",
+      birthRaw: parseDate(r.birth) ? isoToRoc(parseDate(r.birth)) : (r.birth || ""),
+      deathRaw: parseDate(r.death) ? isoToRoc(parseDate(r.death)) : (r.death || ""),
+      father: r.father || "", mother: r.mother || "", spouse: r.spouse || "",
+      fatherName: r.fatherName || "", motherName: r.motherName || "", spouseName: r.spouseName || "",
+      renounceChecks: r.renounceChecks && typeof r.renounceChecks === "object" ? r.renounceChecks : {},
+      lost_right: Array.isArray(r.lost_right) ? r.lost_right.map(String) : [],
+      sources: Array.isArray(r.sources) ? r.sources : [],
+    });
+    for (const t of Array.isArray(r.renounced) ? r.renounced : []) p.renounceChecks[String(t)] ||= { status: "yes" };
+    return p;
+  });
+  for (const p of state.persons) {                       // 配偶雙向補齊
+    const s = byId(p.spouse);
+    if (s && !s.spouse) s.spouse = p.id;
+  }
+  state.decedent = raw.decedent ? String(raw.decedent) : "";
+  state.queried = new Set(Array.isArray(raw.queried) ? raw.queried : []);
+  state.files = Array.isArray(raw.files) ? raw.files : [];
+}
+function exportData() {
+  const out = {
+    _說明: "繼承系統表案件檔。含個人資料，請依單位規定保管。",
+    decedent: state.decedent, queried: [...state.queried], files: state.files,
+    persons: state.persons.map(p => ({ ...p, birth: parseDate(p.birthRaw) || p.birthRaw || null,
+      death: parseDate(p.deathRaw) || p.deathRaw || null, birthRaw: undefined, deathRaw: undefined })),
+  };
+  const dec = byId(state.decedent);
+  download(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), `繼承案件_${dec ? dec.name : "未命名"}.json`);
+}
+function exportCsvFile() {
+  const persons = state.persons.map(p => ({ ...p, birth: parseDate(p.birthRaw) || p.birthRaw, death: parseDate(p.deathRaw) || p.deathRaw, renounced: renouncedOf(p) }));
+  const dec = byId(state.decedent);
+  download(new Blob([exportCsv(persons, state.decedent)], { type: "text/csv;charset=utf-8" }), `繼承資料_${dec ? dec.name : "未命名"}.csv`);
+}
+function downloadTemplate() {
+  const raw = JSON.parse($("#sample-data").textContent);
+  download(new Blob([exportCsv(raw.persons, raw.decedent)], { type: "text/csv;charset=utf-8" }), "繼承資料範本.csv");
+}
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- 訊息 ---------- */
+function showMessages(blocks) {
+  const box = $("#import-messages");
+  box.replaceChildren();
+  for (const b of blocks.filter(Boolean)) {
+    const d = document.createElement("div"); d.className = `notice ${b.cls}`;
+    const h = document.createElement("strong"); h.textContent = b.title; d.appendChild(h);
+    if (b.items && b.items.length) {
+      const ul = document.createElement("ul");
+      for (const t of b.items) { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }
+      d.appendChild(ul);
+    }
+    const x = document.createElement("button"); x.type = "button"; x.className = "icon-btn notice-close"; x.textContent = "✕"; x.title = "關閉";
+    x.addEventListener("click", () => d.remove());
+    d.appendChild(x);
+    box.appendChild(d);
+  }
+}
+
+/* ---------- 匯入 ---------- */
+const MAP_KEY = headers => "inh-map:" + headers.map(h => h.trim()).join("|");
+function loadRemembered(headers) { try { return JSON.parse(localStorage.getItem(MAP_KEY(headers)) || "null"); } catch { return null; } }
+function remember(headers, v) { try { localStorage.setItem(MAP_KEY(headers), JSON.stringify(v)); } catch { /* 無法儲存時略過 */ } }
+
+function readBytes(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
+}
+async function importFiles(fileList) {
+  const blocks = [];
+  for (const f of fileList) {
+    try {
+      const { text, encoding } = decodeBytes(await readBytes(f));
+      blocks.push(await importOne(f.name, text, encoding, false));
+    } catch (err) { blocks.push({ cls: "error", title: `${f.name}：無法讀取`, items: [err.message] }); }
+  }
+  showMessages(blocks);
+  renderTable(); schedule();
+}
+
+async function importOne(name, text, encoding, auto) {
+  if (/\.json$/i.test(name) || /^\s*\{/.test(text)) {
+    if (hasData() && !auto && !confirm(`「${name}」是案件檔，載入後會取代目前全部資料，確定嗎？`)) return { cls: "warn", title: `${name}：已取消` };
+    loadData(JSON.parse(text));
+    return { cls: "ok", title: `${name}：已載入案件檔，共 ${state.persons.length} 人` };
+  }
+  const table = hhrReadTable(text);
+  let kind = hhrGuessKind(table.headers), mapping = hhrGuessMapping(table.headers);
+  const mem = loadRemembered(table.headers);
+  if (mem) ({ kind, mapping } = mem);
+  if (!auto) {
+    const r = await openMapDialog(name, encoding, table, kind, mapping);
+    if (!r) return { cls: "warn", title: `${name}：已取消匯入` };
+    ({ kind, mapping } = r);
+    remember(table.headers, { kind, mapping });
+  }
+
+  if (kind === "simple") {
+    if (hasData() && !auto && !confirm("本系統 CSV 格式會取代目前全部資料，確定嗎？")) return { cls: "warn", title: `${name}：已取消` };
+    const { data, errors, warnings } = importCsv(text);
+    if (errors.length) return { cls: "error", title: `${name}：無法匯入，有 ${errors.length} 項問題需先修正`, items: [...errors, ...warnings] };
+    loadData(data);
+    return { cls: warnings.length ? "warn" : "ok", title: `${name}：已匯入 ${data.persons.length} 人（${encoding}）`, items: warnings };
+  }
+
+  const parsed = hhrParse(table, mapping, kind);
+  if (parsed.errors.length) return { cls: "error", title: `${name}：無法匯入`, items: [...parsed.errors, ...parsed.warnings] };
+  const m = hhrMerge(state.persons, parsed, name, newId);
+  state.files.push({ name, kind, anchor: parsed.anchorUid, count: parsed.records.length, at: todayRoc(),
+    rels: parsed.records.map(r => ({ uid: r.uid, relation: r.relation })) });
+  let anchorName = "";
+  if (kind === "kin") {
+    const a = state.persons.find(p => normUid(p.uid) === parsed.anchorUid);
+    state.queried.add(a.id);
+    anchorName = a.name;
+    if (!state.decedent) state.decedent = a.id;
+  }
+  const link = hhrLink(state.persons, state.files);
+  const items = [...parsed.warnings, ...m.conflicts, ...link.warnings];
+  return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（本人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${encoding}）` };
+}
+
+/* 欄位對應視窗 */
+function openMapDialog(name, encoding, table, kind0, mapping0) {
+  return new Promise(resolve => {
+    const dlg = $("#map-dialog");
+    dlg.replaceChildren();
+    let kind = kind0, mapping = { ...mapping0 };
+    const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+    dlg.appendChild(mk("h3", "", `匯入：${name}`));
+    dlg.appendChild(mk("p", "muted", `${encoding} 編碼・${table.body.length} 列資料・偵測到 ${table.headers.length} 個欄位。請確認檔案種類與欄位對應。`));
+
+    const kindRow = mk("div", "kind-row");
+    for (const k of ["kin", "personal", "simple"]) {
+      const lab = mk("label");
+      const r = mk("input"); r.type = "radio"; r.name = "kind"; r.value = k; r.checked = k === kind;
+      r.addEventListener("change", () => { kind = k; render(); });
+      lab.append(r, document.createTextNode(" " + { kin: "親等關聯資料（二、三親等）", personal: "個人戶籍資料", simple: "本系統 CSV 格式（取代目前資料）" }[k]));
+      kindRow.appendChild(lab);
+    }
+    dlg.appendChild(kindRow);
+    const body = mk("div", "map-body");
+    dlg.appendChild(body);
+    const err = mk("div", "map-error");
+    dlg.appendChild(err);
+    const actions = mk("div", "map-actions");
+    const cancel = mk("button", "", "取消"); cancel.type = "button";
+    const ok = mk("button", "primary", "匯入此檔"); ok.type = "button";
+    actions.append(cancel, ok);
+    dlg.appendChild(actions);
+
+    const sample = table.body.slice(0, 3);
+    function render() {
+      body.replaceChildren();
+      if (kind === "simple") {
+        body.appendChild(mk("p", "muted", "本系統的 CSV 範本格式（父、母、配偶填姓名）。匯入後會取代目前全部資料。"));
+        err.textContent = ""; ok.disabled = false; return;
+      }
+      const fields = HHR_FIELDS.filter(f => f.kinds.includes(kind));
+      const t = mk("table", "map-table");
+      const hr = t.createTHead().insertRow();
+      ["系統欄位", "對應到檔案中的欄位", "第一筆資料"].forEach(x => hr.appendChild(mk("th", "", x)));
+      const tb = t.createTBody();
+      for (const f of fields) {
+        const r = tb.insertRow();
+        const req = (f.required || []).includes(kind);
+        const c0 = r.insertCell(); c0.textContent = f.label + (req ? "（必要）" : "");
+        if (req) c0.className = "req";
+        const sel = mk("select");
+        const o0 = mk("option", "", "（無此欄位）"); o0.value = ""; sel.appendChild(o0);
+        table.headers.forEach((h, i) => { const o = mk("option", "", h || `第 ${i + 1} 欄`); o.value = String(i); if (mapping[f.key] === i) o.selected = true; sel.appendChild(o); });
+        sel.addEventListener("change", () => {
+          if (sel.value === "") delete mapping[f.key]; else mapping[f.key] = +sel.value;
+          render();
+        });
+        r.insertCell().appendChild(sel);
+        const v = f.key in mapping && sample[0] ? String(sample[0][mapping[f.key]] ?? "") : "";
+        r.insertCell().textContent = f.key === "uid" ? maskUid(v) : v;
+      }
+      body.appendChild(t);
+
+      // 預覽
+      const prevFields = fields.filter(f => f.key in mapping && ["relation", "name", "uid", "birth", "death", "fatherName", "motherName"].includes(f.key));
+      if (prevFields.length && sample.length) {
+        body.appendChild(mk("h4", "", "預覽（前 3 筆）"));
+        const pv = mk("table", "map-table preview");
+        const ph = pv.createTHead().insertRow();
+        prevFields.forEach(f => ph.appendChild(mk("th", "", f.label.replace("（相對於本人）", ""))));
+        const pb = pv.createTBody();
+        for (const row of sample) {
+          const r = pb.insertRow();
+          for (const f of prevFields) {
+            let v = String(row[mapping[f.key]] ?? "").trim();
+            if (f.key === "uid") v = maskUid(v);
+            if ((f.key === "birth" || f.key === "death") && parseDate(v)) v = roc(parseDate(v));
+            r.insertCell().textContent = v;
+          }
+        }
+        body.appendChild(pv);
+      }
+      const missing = fields.filter(f => (f.required || []).includes(kind) && !(f.key in mapping)).map(f => f.label);
+      const dup = Object.values(mapping).filter((v, i, a) => a.indexOf(v) !== i).length;
+      err.textContent = missing.length ? `尚未對應必要欄位：${missing.join("、")}` : dup ? "有兩個系統欄位對應到同一個檔案欄位，請確認" : "";
+      ok.disabled = missing.length > 0;
+    }
+    render();
+    const done = v => { dlg.close(); resolve(v); };
+    cancel.addEventListener("click", () => done(null));
+    ok.addEventListener("click", () => done({ kind, mapping }));
+    dlg.addEventListener("cancel", e => { e.preventDefault(); done(null); }, { once: true });
+    dlg.showModal();
+  });
+}
+
+/* 戶籍匯入範例：每按一次匯入下一份，模擬實務流程 */
+async function demoStep() {
+  const samples = JSON.parse($("#hhr-samples").textContent);
+  if (state.demoStep === 0 || state.demoStep >= samples.length) {
+    if (hasData() && !confirm("戶籍匯入範例會從頭開始，並取代目前的資料，確定嗎？")) return;
+    resetCase();
+  }
+  const s = samples[state.demoStep];
+  const step = state.demoStep;
+  const msg = await importOne(s.name, s.text, "UTF-8", true);
+  state.demoStep = step + 1;
+  const hint = ["範例第 1 步：匯入被繼承人的二親等資料。請看下方「待調閱清單」，系統提示需調閱王淑娟的資料。再按一次「戶籍匯入範例」繼續。",
+    "範例第 2 步：匯入王淑娟的二親等資料，系統以統一編號合併重複的人，並補上她的配偶。範例中被繼承人的二親等資料漏了孫女王小平，再按一次補上。",
+    "範例第 3 步：以個人戶籍資料補上王小平，依父姓名自動連到王志偉。最後請在「拋棄繼承查證」把王淑芬設為「已拋棄」，看結果如何變化。"][step];
+  showMessages([msg, { cls: "info", title: hint }]);
+  $("#btn-demo").textContent = state.demoStep >= samples.length ? "戶籍匯入範例（重新開始）" : `戶籍匯入範例（${state.demoStep + 1}/${samples.length}）`;
+  renderTable(); schedule();
+}
+
+/* ---------- 人員表格 ---------- */
+function option(sel, value, text, current) {
+  const o = document.createElement("option");
+  o.value = value; o.textContent = text; if (value === current) o.selected = true;
+  sel.appendChild(o);
+}
+function personLabel(p) { return `${p.name || "（未命名）"}${p.title ? "・" + p.title : ""}`; }
+function applyAutoTitles() {
+  const T = autoTitles(state.persons, state.decedent);
+  for (const p of state.persons) if (p.titleAuto) p.title = T[p.id] || "";
+}
+
+function renderTable() {
+  applyAutoTitles();
+  const ds = $("#decedent");
+  ds.replaceChildren();
+  option(ds, "", "— 請選擇 —", state.decedent);
+  for (const p of state.persons) option(ds, p.id, personLabel(p), state.decedent);
+
+  const tb = $("#people tbody");
+  tb.replaceChildren();
+  state.persons.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+    if (p.id === state.decedent) tr.className = "is-decedent";
+    const td = (child, cls) => { const c = document.createElement("td"); if (cls) c.className = cls; c.appendChild(child); tr.appendChild(c); return c; };
+    const num = document.createElement("span"); num.textContent = idx + 1; td(num, "num");
+
+    const text = (field, ph, cls) => {
+      const i = document.createElement("input");
+      i.type = "text"; i.value = p[field] || ""; i.placeholder = ph; if (cls) i.className = cls;
+      let hint = null;
+      i.addEventListener("input", () => {
+        p[field] = i.value;
+        if (field === "title") p.titleAuto = i.value.trim() === "";
+        if (field.endsWith("Raw")) dateHint(i, hint);
+        schedule();
+      });
+      if (field === "name" || field === "title" || field === "uid") i.addEventListener("change", () => (field === "title" && p.titleAuto ? renderTable() : refreshSelects()));
+      const wrap = document.createElement("div");
+      wrap.appendChild(i);
+      if (field.endsWith("Raw")) { hint = document.createElement("small"); wrap.appendChild(hint); dateHint(i, hint); }
+      if (field === "title") {
+        if (p.titleAuto && p.title) i.classList.add("auto");
+        i.title = p.titleAuto ? "依被繼承人自動換算，可直接修改" : "手動輸入（清空即恢復自動換算）";
+      }
+      if (field === "name" && p.sources && p.sources.length) {
+        const s = document.createElement("small"); s.className = "src"; s.textContent = `來源：${p.sources.length} 份`; s.title = p.sources.join("\n"); wrap.appendChild(s);
+      }
+      return wrap;
+    };
+    td(text("title", "稱謂"));
+    td(text("name", "姓名"));
+    td(text("uid", "統一編號", "uid"));
+
+    const g = document.createElement("select");
+    [["", "—"], ["M", "男"], ["F", "女"]].forEach(([v, t]) => option(g, v, t, p.gender));
+    g.addEventListener("change", () => { p.gender = g.value; renderTable(); schedule(); });
+    td(g);
+    td(text("birthRaw", "民國 年/月/日", "date"));
+    td(text("deathRaw", "（存歿）", "date"));
+
+    for (const rel of ["father", "mother", "spouse"]) {
+      const s = document.createElement("select");
+      s.dataset.rel = rel; s.dataset.pid = p.id;
+      fillRelSelect(s, p, rel);
+      s.addEventListener("change", () => setRelation(p, rel, s.value));
+      const cell = td(s);
+      const nm = p[rel + "Name"];
+      if (nm && !p[rel]) { const h = document.createElement("small"); h.className = "note"; h.textContent = `戶籍記載：${nm}`; h.title = "此人不在名單中；如與繼承有關，請調閱其資料"; cell.appendChild(h); }
+    }
+
+    const c = document.createElement("input");
+    c.type = "checkbox";
+    c.checked = !!state.decedent && p.lost_right.includes(state.decedent);
+    c.disabled = !state.decedent || p.id === state.decedent;
+    c.title = "對被繼承人喪失繼承權（第1145條）";
+    c.addEventListener("change", () => {
+      p.lost_right = p.lost_right.filter(x => x !== state.decedent);
+      if (c.checked) p.lost_right.push(state.decedent);
+      schedule();
+    });
+    td(c, "center");
+
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "icon-btn"; del.title = "刪除這一列"; del.textContent = "✕";
+    del.addEventListener("click", () => removePerson(p.id));
+    td(del, "center");
+    tb.appendChild(tr);
+  });
+  $("#empty-hint").hidden = hasData();
+  renderFileList();
+}
+function renderFileList() {
+  const box = $("#file-list");
+  box.replaceChildren();
+  if (!state.files.length) return;
+  const h = document.createElement("strong"); h.textContent = `已匯入 ${state.files.length} 份戶籍資料：`; box.appendChild(h);
+  const ul = document.createElement("ul");
+  for (const f of state.files) {
+    const a = state.persons.find(p => f.anchor && normUid(p.uid) === f.anchor);
+    const li = document.createElement("li");
+    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（本人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
+    ul.appendChild(li);
+  }
+  box.appendChild(ul);
+}
+function fillRelSelect(s, p, rel) {
+  s.replaceChildren();
+  option(s, "", "—", p[rel]);
+  for (const x of state.persons) if (x.id !== p.id) option(s, x.id, personLabel(x), p[rel]);
+}
+function refreshSelects() {
+  for (const s of document.querySelectorAll("select[data-rel]")) {
+    const p = byId(s.dataset.pid);
+    if (p) fillRelSelect(s, p, s.dataset.rel);
+  }
+  const ds = $("#decedent"), cur = state.decedent;
+  ds.replaceChildren(); option(ds, "", "— 請選擇 —", cur);
+  for (const p of state.persons) option(ds, p.id, personLabel(p), cur);
+  schedule();
+}
+function setRelation(p, rel, value) {
+  if (rel === "spouse") {
+    const old = byId(p.spouse);
+    if (old && old.spouse === p.id) old.spouse = "";
+    p.spouse = value;
+    const nw = byId(value);
+    if (nw) {
+      const nwOld = byId(nw.spouse);
+      if (nwOld && nwOld !== p) nwOld.spouse = "";
+      nw.spouse = p.id;
+    }
+  } else p[rel] = value;
+  renderTable(); schedule();
+}
+function removePerson(id) {
+  const p = byId(id);
+  if (!confirm(`確定刪除「${p ? personLabel(p) : id}」？與此人相關的親屬關係也會一併清除。`)) return;
+  state.persons = state.persons.filter(x => x.id !== id);
+  for (const x of state.persons) {
+    for (const rel of ["father", "mother", "spouse"]) if (x[rel] === id) x[rel] = "";
+    delete x.renounceChecks[id];
+  }
+  if (state.decedent === id) state.decedent = "";
+  state.queried.delete(id);
+  renderTable(); schedule();
+}
+function dateHint(input, hint) {
+  const v = input.value.trim(), iso = parseDate(v);
+  input.classList.toggle("bad", !!v && iso === undefined);
+  hint.textContent = !v ? "" : iso === undefined ? "格式錯誤" : roc(iso);
+  hint.className = iso === undefined ? "bad" : "";
+}
+
+/* ---------- 計算與輸出 ---------- */
+let timer = null;
+function schedule() { clearTimeout(timer); timer = setTimeout(compute, 300); }
+
+function enginePersons() {
+  return state.persons.map(p => ({
+    id: p.id, uid: (p.uid || "").trim(), name: (p.name || "").trim(), title: (p.title || "").trim(), gender: p.gender,
+    birth: parseDate(p.birthRaw), death: parseDate(p.deathRaw), _birthRaw: (p.birthRaw || "").trim(), _deathRaw: (p.deathRaw || "").trim(),
+    father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
+    fatherName: p.fatherName || "", motherName: p.motherName || "",
+    renounced: renouncedOf(p), lost_right: p.lost_right,
+  }));
+}
+function mkEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
+function compute() {
+  const msg = $("#messages"), out = $("#report-body");
+  msg.replaceChildren();
+  $("#followups").replaceChildren();
+  const persons = enginePersons();
+  const { errors, warnings } = validate(persons, state.decedent);
+  const box = (cls, title, items) => {
+    if (!items.length) return;
+    const d = mkEl("div", `notice ${cls}`); d.appendChild(mkEl("strong", "", title));
+    const ul = mkEl("ul"); for (const t of items) ul.appendChild(mkEl("li", "", t));
+    d.appendChild(ul); msg.appendChild(d);
+  };
+  box("error", `有 ${errors.length} 項資料需要修正，修正後才會產生系統表`, errors);
+  box("warn", "請確認", warnings);
+  $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
+  if (errors.length) { out.replaceChildren(mkEl("p", "placeholder", "資料修正完成後，系統表會自動顯示在這裡。")); return; }
+
+  const fam = new Family(persons.map(p => ({ ...p, birth: p.birth || null, death: p.death || null })));
+  let result;
+  try { result = new InheritanceEngine(fam).distribute(state.decedent); }
+  catch (e) { box("error", "計算時發生問題", [e.message]); return; }
+
+  const items = renounceItemsWithRecords(fam, result);
+  const pending = items.filter(x => !checkOf(x).status).length;
+  const follow = followUps(fam, result, state.queried);
+  const mustFollow = follow.filter(f => f.level === "必要").length;
+  renderFollowups(follow);
+
+  out.replaceChildren();
+  state.last = { fam, result, items };
+  const notes = [];
+  if (mustFollow) notes.push(`尚有 ${mustFollow} 項資料待調閱`);
+  if (pending) notes.push(`${pending} 人未查證拋棄繼承`);
+  const wrap = mkEl("div", "chart-wrap");
+  const remarkExtra = {};
+  for (const it of items) {
+    const c = checkOf(it);
+    if (c.status === "yes" && (c.court || c.caseNo)) remarkExtra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
+  }
+  wrap.appendChild(drawChart(fam, result, { note: notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "", remarkExtra }));
+  const treeView = mkEl("div", "view-tree"), formView = mkEl("div", "view-form");
+  treeView.append(wrap, renouncePanel(fam, result, items, pending), shareTable(fam, result, items), rulesSection(fam, result), stepLog(fam, result));
+  const fd = formData(fam, result, items, notes);
+  const rp2 = renouncePanel(fam, result, items, pending); rp2.classList.add("no-print");
+  formView.append(formSheet(fd), rp2);
+  const tabs = mkEl("div", "view-tabs no-print");
+  const views = { tree: treeView, form: formView };
+  const setView = v => {
+    state.view = v;
+    for (const [k, node] of Object.entries(views)) node.hidden = k !== v;
+    for (const b of tabs.children) b.classList.toggle("active", b.dataset.v === v);
+  };
+  for (const [v, label] of [["tree", "樹狀圖與明細"], ["form", "表格式（單張）"]]) {
+    const b = mkEl("button", "", label); b.type = "button"; b.dataset.v = v;
+    b.addEventListener("click", () => setView(v));
+    tabs.appendChild(b);
+  }
+  out.append(tabs, treeView, formView);
+  setView(state.view);
+  $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = false;
+}
+
+/* 待調閱清單 */
+function renderFollowups(list) {
+  const box = $("#followups");
+  box.replaceChildren();
+  if (!state.decedent) return;
+  const sec = mkEl("section", "followups");
+  const must = list.filter(f => f.level === "必要");
+  sec.appendChild(mkEl("h3", "", must.length ? `待調閱清單（${must.length} 項必要）` : "待調閱清單"));
+  if (!list.length) { sec.appendChild(mkEl("p", "ok-line", "✓ 依目前資料，沒有需要再往下調閱的對象。")); box.appendChild(sec); return; }
+  const ul = mkEl("ul");
+  for (const f of list) {
+    const li = mkEl("li", f.level === "必要" ? "must" : "maybe");
+    li.appendChild(mkEl("span", "chip", f.level));
+    li.appendChild(mkEl("span", "txt", f.text));
+    const b = mkEl("button", "", "已調閱／已確認"); b.type = "button";
+    b.title = "已調閱但查無資料，或已人工確認時按下，此項即不再提示";
+    b.addEventListener("click", () => { state.queried.add(f.pid); schedule(); });
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  box.appendChild(sec);
+}
+
+/* 拋棄繼承查證 */
+function checkOf({ pid, target }) { return (byId(pid)?.renounceChecks || {})[target] || {}; }
+function renounceItemsWithRecords(fam, result) {
+  const list = renounceItems(fam, result);
+  const keys = new Set(list.map(x => `${x.pid}|${x.target}`));
+  for (const p of state.persons) {
+    for (const [t, v] of Object.entries(p.renounceChecks || {})) {
+      if (v.status && fam.p[t] && !keys.has(`${p.id}|${t}`)) { list.push({ pid: p.id, target: t }); keys.add(`${p.id}|${t}`); }
+    }
+  }
+  const order = id => (id === result.decedentId ? 0 : 1);
+  return list.sort((a, b) => order(a.target) - order(b.target));
+}
+function renouncePanel(fam, result, items, pending) {
+  const sec = mkEl("section", "renounce-panel");
+  sec.appendChild(mkEl("h3", "", `拋棄繼承查證（共 ${items.length} 人，${pending ? `${pending} 人未查證` : "均已查證"}）`));
+  sec.appendChild(mkEl("p", "muted no-print", "請至法院家事事件公告查詢是否有拋棄繼承，再於此登錄結果。有人拋棄後，系統會重新計算，並把遞補的繼承人加入清單。再轉繼承人可僅就再轉部分拋棄。"));
+  const t = mkEl("table");
+  const hr = t.createTHead().insertRow();
+  ["姓名", "出生日期", "統一編號", "查證對象", "查證結果", "法院", "案號／文號", "查詢日期"].forEach(x => hr.appendChild(mkEl("th", "", x)));
+  const tb = t.createTBody();
+  for (const it of items) {
+    const p = byId(it.pid), fp = fam.p[it.pid];
+    const rec = (p.renounceChecks[it.target] ||= {});
+    if (!rec.status) rec.status = "";
+    const r = tb.insertRow();
+    r.className = rec.status === "yes" ? "row-renounced" : rec.status === "" ? "row-pending" : "";
+    r.insertCell().textContent = `${fp.name}${p.title ? `（${p.title}）` : ""}`;
+    r.insertCell().textContent = fp.birth ? roc(fp.birth) : "";
+    r.insertCell().textContent = uidShow(p.uid);
+    r.insertCell().textContent = it.target === result.decedentId ? `被繼承人 ${fam.p[it.target].name}` : `再轉：${fam.p[it.target].name}之遺產`;
+    const sel = mkEl("select");
+    for (const [v, l] of Object.entries(STATUS_LABEL)) { const o = mkEl("option", "", l); o.value = v; if (v === rec.status) o.selected = true; sel.appendChild(o); }
+    sel.addEventListener("change", () => {
+      rec.status = sel.value;
+      if (rec.status && !rec.checkedOn) rec.checkedOn = todayRoc();
+      schedule();
+    });
+    r.insertCell().appendChild(sel);
+    for (const [k, ph] of [["court", "例：臺灣臺北地方法院"], ["caseNo", "例：114年度司繼字第123號"], ["checkedOn", "民國 年/月/日"]]) {
+      const i = mkEl("input"); i.type = "text"; i.value = rec[k] || ""; i.placeholder = ph;
+      if (k !== "checkedOn" && rec.status !== "yes") { i.disabled = true; i.placeholder = ""; }
+      i.addEventListener("input", () => { rec[k] = i.value; });
+      i.addEventListener("change", schedule);
+      r.insertCell().appendChild(i);
+    }
+  }
+  sec.appendChild(t);
+  return sec;
+}
+function renounceText(it) {
+  const c = checkOf(it), p = byId(it.pid);
+  const on = it.target === state.decedent ? "" : `（對${byId(it.target)?.name}之再轉部分）`;
+  if (c.status === "yes") return `已拋棄繼承${on}：${[c.court, c.caseNo].filter(Boolean).join(" ") || "法院資料待補"}`;
+  if (c.status === "none") return `查無拋棄繼承${on}（${c.checkedOn || ""}查詢）`;
+  return `拋棄繼承尚未查證${on}`;
+}
+
+function shareTable(fam, result, items) {
+  const final = finalShares(result);
+  const remarks = buildRemarks(fam, result);
+  const parts = {}, original = {};
+  const walk = (res, from, mult) => {
+    for (const s of res.shares) {
+      original[s.id] ??= s.share;
+      if (!res.retransfers[s.id]) (parts[s.id] ||= []).push(from ? `再轉繼承（自${from}）：${s.basis}　${s.share.mul(mult)}` : `${s.basis}　${s.share.mul(mult)}`);
+    }
+    for (const s of res.shares) if (res.retransfers[s.id]) walk(res.retransfers[s.id], fam.p[s.id].name, s.share.mul(mult));
+  };
+  walk(result, null, new Frac(1));
+  const basisOf = Object.fromEntries(Object.entries(parts).map(([pid, list]) =>
+    [pid, list.length === 1 ? list[0].replace(/　\S+$/, "") : list.join("\n＋ ")]));
+  const rnOf = pid => items.filter(x => x.pid === pid).map(renounceText);
+
+  const sec = mkEl("section", "result-table");
+  sec.appendChild(mkEl("h3", "", "繼承系統表明細"));
+  const t = mkEl("table");
+  const head = t.createTHead().insertRow();
+  ["姓名", "統一編號", "稱謂", "存歿", "繼承依據", "應繼分", "比例", "備註"].forEach(x => head.appendChild(mkEl("th", "", x)));
+  const body = t.createTBody();
+  const pct = fr => `${(fr.n / fr.d * 100).toFixed(2)}%`;
+  const alive = p => (p.death ? `歿（${roc(p.death)}）` : "存");
+  const row = (p, cells, cls) => {
+    const r = body.insertRow(); if (cls) r.className = cls;
+    [p.name, uidShow(p.uid), p.title, alive(p), ...cells].forEach((v, i) => {
+      const c = r.insertCell(); c.textContent = v;
+      if (i === 5 || i === 6) c.className = "num";
+      if (i === 7) c.className = "remark";
+    });
+  };
+  row(fam.p[result.decedentId], ["被繼承人", "—", "", ""], "row-decedent");
+  let total = new Frac(0);
+  for (const [pid, fr] of Object.entries(final)) {
+    total = total.add(fr);
+    const rm = [remarks[pid] ? remarks[pid].text : "", ...rnOf(pid)].filter(Boolean).join("\n");
+    row(fam.p[pid], [basisOf[pid] || "", fr.toString(), pct(fr), rm], rnOf(pid).some(x => x.includes("尚未查證")) ? "row-pending" : "");
+  }
+  const rank = { retrans: 0, predeceased: 1, renounced: 2, lost: 3, other: 4 };
+  Object.entries(remarks).filter(([pid]) => !final[pid]).sort((a, b) => rank[a[1].kind] - rank[b[1].kind]).forEach(([pid, r]) => {
+    const p = fam.p[pid];
+    const rm = [r.text, ...rnOf(pid).filter(x => x.startsWith("已拋棄"))].join("\n");
+    if (r.kind === "retrans") row(p, ["繼承開始後死亡，由其繼承人再轉繼承", `（原 ${original[pid]}）`, "—", rm], "row-retrans");
+    else row(p, [r.tag.replace("・", "，"), "—", "—", rm], r.kind === "renounced" || r.kind === "lost" ? "row-renounced" : "row-excluded");
+  });
+  const foot = t.createTFoot().insertRow();
+  ["合計", "", "", "", "", total.toString(), pct(total), ""].forEach((v, i) => { const c = foot.insertCell(); c.textContent = v; if (i === 5 || i === 6) c.className = "num"; });
+  if (!Object.keys(final).length) { const r = body.insertRow(), c = r.insertCell(); c.colSpan = 8; c.textContent = "無繼承人（無人承受之遺產，民法第1177條）"; }
+  sec.appendChild(t);
+  return sec;
+}
+
+/* ---------- 表格式（單張）繼承系統表 ---------- */
+function familyOrder(fam, did) {
+  const seen = new Set([did]), order = [];
+  const push = id => { if (id && fam.p[id] && !seen.has(id)) { seen.add(id); order.push(id); } };
+  const visit = id => { push(id); const p = fam.p[id]; if (p.spouse) push(p.spouse); for (const c of fam.children(id)) visit(c.id); };
+  push(fam.p[did].spouse);
+  for (const c of fam.children(did)) visit(c.id);
+  for (const par of fam.parents(did)) push(par.id);
+  for (const sb of fam.siblings(did)) visit(sb.id);
+  for (const g of fam.grandparents(did)) push(g.id);
+  for (const id of Object.keys(fam.p)) push(id);
+  return order;
+}
+function formData(fam, result, items, pendingNotes) {
+  const did = result.decedentId, dec = fam.p[did];
+  const final = finalShares(result), remarks = buildRemarks(fam, result);
+  const how = {}, original = {};
+  const walk = (res, from) => {
+    for (const s of res.shares) {
+      original[s.id] ??= s.share;
+      if (!res.retransfers[s.id]) (how[s.id] ||= []).push(from ? `再轉繼承（自${from}）` : (s.short === "第1144條 配偶" ? "配偶" : s.short));
+    }
+    for (const s of res.shares) if (res.retransfers[s.id]) walk(res.retransfers[s.id], fam.p[s.id].name);
+  };
+  walk(result, null);
+  let total = new Frac(0);
+  const rows = familyOrder(fam, did).map((id, i) => {
+    const p = fam.p[id], r = remarks[id];
+    let status, share, kind;
+    if (final[id]) { status = how[id].join("＋"); share = final[id].toString(); kind = "heir"; total = total.add(final[id]); }
+    else if (r && r.kind === "retrans") { status = "繼承開始後死亡，再轉繼承"; share = `原 ${original[id]}`; kind = "retrans"; }
+    else { status = r ? r.tag.replace(/・/g, "，") : "非繼承人"; share = "—"; kind = r ? r.kind : "other"; }
+    const note = items.filter(x => x.pid === id).map(it => {
+      const c = checkOf(it), on = it.target === did ? "" : `（${fam.p[it.target].name}部分）`;
+      return c.status === "yes" ? `拋棄繼承${on}：${[c.court, c.caseNo].filter(Boolean).join(" ") || "法院資料待補"}`
+        : c.status === "" || !c.status ? `拋棄繼承未查證${on}` : "";
+    }).filter(Boolean).join("；");
+    return { no: i + 1, title: p.title, name: p.name, uid: uidShow(p.uid), birth: isoToRoc(p.birth), death: isoToRoc(p.death), status, share, note, kind };
+  });
+  const rules = applicableRules(fam, result).map(r => r.title.replace(/（.*?）/, m => m)).join("、");
+  return {
+    head: { name: dec.name, uid: uidShow(dec.uid), birth: dec.birth ? roc(dec.birth) : "", death: roc(result.openedOn), order: result.order,
+      heirs: Object.keys(final).length },
+    rows, total: total.toString(),
+    notes: [
+      ...(pendingNotes.length ? [`※ ${pendingNotes.join("、")}，本表尚非最終結果。`] : []),
+      `應繼分合計：${total}。`,
+      `適用規定：${rules}。`,
+      "本表由離線系統依現行民法自動產生，應與戶籍資料逐一核對後使用。",
+    ],
+  };
+}
+function formSheet(d) {
+  const sec = mkEl("section", "form-sheet");
+  sec.appendChild(mkEl("h2", "fs-title", "繼承系統表"));
+  const hd = mkEl("table", "fs-head");
+  const hr = (a, b, c, e) => { const r = hd.insertRow(); [a, b, c, e].forEach((v, i) => { const x = r.insertCell(); x.textContent = v; if (i % 2 === 0) x.className = "k"; }); };
+  hr("被繼承人", d.head.name, "統一編號", d.head.uid);
+  hr("出生日期", d.head.birth, "死亡日期（繼承開始）", d.head.death);
+  hr("繼承順序", d.head.order, "繼承人數", `${d.head.heirs} 人`);
+  const sc1 = mkEl("div", "fs-scroll"); sc1.appendChild(hd); sec.appendChild(sc1);
+  const t = mkEl("table", "fs-table");
+  const th = t.createTHead().insertRow();
+  ["編號", "稱謂", "姓名", "統一編號", "出生日期", "死亡日期", "繼承情形", "應繼分", "備註"].forEach(x => th.appendChild(mkEl("th", "", x)));
+  const tb = t.createTBody();
+  for (const r of d.rows) {
+    const tr = tb.insertRow();
+    tr.className = `k-${r.kind}`;
+    [r.no, r.title, r.name, r.uid, r.birth, r.death, r.status, r.share, r.note].forEach((v, i) => {
+      const c = tr.insertCell(); c.textContent = v;
+      if (i === 0 || i === 7) c.className = "c";
+    });
+  }
+  const tf = t.createTFoot().insertRow();
+  [["合計", 7], [d.total, 1], ["", 1]].forEach(([v, span]) => { const c = tf.insertCell(); c.textContent = v; c.colSpan = span; if (span === 7) c.className = "r"; else c.className = "c"; });
+  const sc2 = mkEl("div", "fs-scroll"); sc2.appendChild(t); sec.appendChild(sc2);
+  const ft = mkEl("div", "fs-foot");
+  for (const n of d.notes) ft.appendChild(mkEl("p", n.startsWith("※") ? "warn" : "", n));
+  const sign = mkEl("div", "fs-sign");
+  [`製表日期：民國${todayRoc().replace(/\//, "年").replace(/\//, "月")}日`, "承辦人：", "覆核："].forEach(x => sign.appendChild(mkEl("span", "", x)));
+  ft.appendChild(sign);
+  sec.appendChild(ft);
+  return sec;
+}
+function exportXlsx() {
+  if (!state.last) return;
+  const { fam, result, items } = state.last;
+  const pend = [];
+  const follow = followUps(fam, result, state.queried).filter(f => f.level === "必要").length;
+  const unchecked = items.filter(x => !checkOf(x).status).length;
+  if (follow) pend.push(`尚有 ${follow} 項資料待調閱`);
+  if (unchecked) pend.push(`${unchecked} 人未查證拋棄繼承`);
+  const d = formData(fam, result, items, pend);
+  const S = (v, s) => ({ v: v === undefined || v === null ? "" : String(v), s });
+  const rows = [
+    [S("繼承系統表", 1)],
+    [S(`被繼承人：${d.head.name}　　統一編號：${d.head.uid}　　出生日期：${d.head.birth}`, 5)],
+    [S(`死亡日期（繼承開始）：${d.head.death}　　繼承順序：${d.head.order}　　繼承人數：${d.head.heirs} 人`, 5)],
+    [],
+    ["編號", "稱謂", "姓名", "統一編號", "出生日期", "死亡日期", "繼承情形", "應繼分", "備註"].map(h => S(h, 2)),
+    ...d.rows.map(r => [S(r.no, 7), S(r.title, 3), S(r.name, 3), S(r.uid, 3), S(r.birth, 3), S(r.death, 3), S(r.status, 3), S(r.share, 7), S(r.note, 3)]),
+    [S("合計", 4), S("", 3), S("", 3), S("", 3), S("", 3), S("", 3), S("", 3), S(d.total, 7), S("", 3)],
+    [],
+    ...d.notes.map(n => [S(n, 6)]),
+    [],
+    [S(`製表日期：民國${todayRoc().replace(/\//, "年").replace(/\//, "月")}日　　　承辦人：＿＿＿＿＿＿　　　覆核：＿＿＿＿＿＿`, 0)],
+  ];
+  const totalRow = 5 + d.rows.length + 1;
+  const merges = ["A1:I1", "A2:I2", "A3:I3", `A${totalRow}:G${totalRow}`];
+  d.notes.forEach((_, i) => merges.push(`A${totalRow + 2 + i}:I${totalRow + 2 + i}`));
+  merges.push(`A${rows.length}:I${rows.length}`);
+  download(buildXlsx(rows, { widths: [6, 12, 10, 13, 11, 11, 26, 9, 34], merges }), `繼承系統表_${d.head.name}.xlsx`);
+}
+
+function rulesSection(fam, result) {
+  const sec = mkEl("section", "result-rules");
+  sec.appendChild(mkEl("h3", "", "本案適用規定"));
+  const dl = mkEl("dl");
+  for (const r of applicableRules(fam, result)) dl.append(mkEl("dt", "", r.title), mkEl("dd", "", r.text));
+  sec.appendChild(dl);
+  return sec;
+}
+function stepLog(fam, result) {
+  const sec = mkEl("section", "result-log");
+  sec.appendChild(mkEl("h3", "", "判斷過程"));
+  const ol = mkEl("ol");
+  const walk = res => { for (const line of res.log) ol.appendChild(mkEl("li", "", line)); Object.values(res.retransfers).forEach(walk); };
+  walk(result);
+  sec.appendChild(ol);
+  return sec;
+}
+
+/* ---------- 按鈕 ---------- */
+function init() {
+  $("#decedent").addEventListener("change", e => { state.decedent = e.target.value; renderTable(); schedule(); });
+  $("#btn-add").addEventListener("click", () => {
+    state.persons.push(blankPerson()); renderTable(); schedule();
+    const rows = document.querySelectorAll("#people tbody tr");
+    rows[rows.length - 1]?.querySelectorAll("input")[1]?.focus();
+  });
+  $("#btn-sample").addEventListener("click", () => {
+    if (hasData() && !confirm("載入範例會取代目前的資料，確定嗎？")) return;
+    loadData(JSON.parse($("#sample-data").textContent));
+    showMessages([]); renderTable(); schedule();
+  });
+  $("#btn-demo").addEventListener("click", demoStep);
+  $("#btn-clear").addEventListener("click", () => {
+    if (!hasData() || !confirm("確定清除全部資料？此動作無法復原。")) return;
+    resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
+  });
+  $("#btn-import").addEventListener("click", () => $("#file").click());
+  $("#file").addEventListener("change", e => {
+    const files = [...e.target.files]; e.target.value = "";
+    if (files.length) importFiles(files);
+  });
+  $("#btn-export").addEventListener("click", exportData);
+  $("#btn-export-csv").addEventListener("click", exportCsvFile);
+  $("#btn-template").addEventListener("click", downloadTemplate);
+  $("#btn-print").addEventListener("click", () => window.print());
+  $("#btn-xlsx").addEventListener("click", exportXlsx);
+  $("#chk-uid").addEventListener("change", e => { state.showFullUid = e.target.checked; compute(); });
+  $("#btn-svg").addEventListener("click", () => {
+    const svg = document.querySelector(".chart-wrap svg"); if (!svg) return;
+    const dec = byId(state.decedent);
+    download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), `繼承系統表_${dec ? dec.name : ""}.svg`);
+  });
+  window.addEventListener("beforeunload", e => { if (hasData()) { e.preventDefault(); e.returnValue = ""; } });
+  renderTable(); compute();
+}
+document.addEventListener("DOMContentLoaded", init);
+
+</script>
+</body>
+</html>
