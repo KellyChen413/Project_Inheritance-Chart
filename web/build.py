@@ -32,6 +32,14 @@ html = (html.replace("/*PDFJS_WORKER*/", safe((vendor / "pdf.worker.min.js").rea
             .replace("/*PDFJS*/", safe((vendor / "pdf.min.js").read_text(encoding="utf-8")))
             .replace("/*CMAPS*/", json.dumps(cmaps)))
 
+# Inter 字型（拉丁字母與數字，SIL OFL 1.1），以 data URI 內嵌；中文沿用系統字型
+faces = "\n".join(
+    f'@font-face {{ font-family: "Inter"; font-style: normal; font-weight: {w}; font-display: swap; '
+    f'src: url(data:font/woff2;base64,{base64.b64encode((vendor / "fonts" / f"inter-latin-{w}-normal.woff2").read_bytes()).decode()}) format("woff2"); '
+    f'unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }}'
+    for w in (400, 500, 600, 700))
+html = html.replace("/*FONTS*/", faces)
+
 out = here.parent / "繼承系統表產生器.html"
 out.write_text(html, encoding="utf-8")
 print(out, f"{out.stat().st_size / 1024:.0f} KB")

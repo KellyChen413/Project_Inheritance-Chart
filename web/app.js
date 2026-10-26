@@ -30,6 +30,22 @@ const byId = id => state.persons.find(p => p.id === id);
 const uidShow = u => (state.showFullUid ? (u || "") : maskUid(u || ""));
 const renouncedOf = p => Object.entries(p.renounceChecks || {}).filter(([, v]) => v.status === "yes").map(([k]) => k);
 function hasData() { return state.persons.length > 0; }
+
+/* 頁內確認視窗（取代瀏覽器的 confirm，線上檢視器也能使用） */
+function askConfirm(text, okLabel = "確定") {
+  return new Promise(resolve => {
+    const dlg = $("#confirm-dialog");
+    $("#confirm-text").textContent = text;
+    const yes = $("#confirm-yes"), no = $("#confirm-no");
+    yes.textContent = okLabel;
+    const done = v => { yes.onclick = no.onclick = null; dlg.oncancel = null; dlg.close(); resolve(v); };
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+    dlg.oncancel = e => { e.preventDefault(); done(false); };
+    dlg.showModal();
+    no.focus();
+  });
+}
 function resetCase() { state.persons = []; state.decedent = ""; state.seq = 1; state.queried = new Set(); state.files = []; state.demoStep = 0; }
 
 /* ---------- 載入（取代）/ 匯出 ---------- */
@@ -129,7 +145,7 @@ async function importFiles(fileList) {
 
 async function importOne(name, text, encoding, auto) {
   if (/\.json$/i.test(name) || /^\s*\{/.test(text)) {
-    if (hasData() && !auto && !confirm(`「${name}」是案件檔，載入後會取代目前全部資料，確定嗎？`)) return { cls: "warn", title: `${name}：已取消` };
+    if (hasData() && !auto && !await askConfirm(`「${name}」是案件檔，載入後會取代目前全部資料，確定嗎？`)) return { cls: "warn", title: `${name}：已取消` };
     loadData(JSON.parse(text));
     return { cls: "ok", title: `${name}：已載入案件檔，共 ${state.persons.length} 人` };
   }
@@ -162,7 +178,7 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
   }
 
   if (kind === "simple") {
-    if (hasData() && !auto && !confirm("本系統 CSV 格式會取代目前全部資料，確定嗎？")) return { cls: "warn", title: `${name}：已取消` };
+    if (hasData() && !auto && !await askConfirm("本系統 CSV 格式會取代目前全部資料，確定嗎？")) return { cls: "warn", title: `${name}：已取消` };
     const { data, errors, warnings } = importCsv(text);
     if (errors.length) return { cls: "error", title: `${name}：無法匯入，有 ${errors.length} 項問題需先修正`, items: [...errors, ...warnings] };
     loadData(data);
@@ -284,7 +300,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
 async function demoStep() {
   const samples = JSON.parse($("#hhr-samples").textContent);
   if (state.demoStep === 0 || state.demoStep >= samples.length) {
-    if (hasData() && !confirm("戶籍匯入範例會從頭開始，並取代目前的資料，確定嗎？")) return;
+    if (hasData() && !await askConfirm("戶籍匯入範例會從頭開始，並取代目前的資料，確定嗎？")) return;
     resetCase();
   }
   const s = samples[state.demoStep];
@@ -295,7 +311,7 @@ async function demoStep() {
     "範例第 2 步：匯入王淑娟的二親等資料，系統以統一編號合併重複的人，並補上她的配偶。範例中被繼承人的二親等資料漏了孫女王小平，再按一次補上。",
     "範例第 3 步：以個人戶籍資料補上王小平，依父姓名自動連到王志偉。最後請在「拋棄繼承查證」把王淑芬設為「已拋棄」，看結果如何變化。"][step];
   showMessages([msg, { cls: "info", title: hint }]);
-  $("#btn-demo").textContent = state.demoStep >= samples.length ? "戶籍匯入範例（重新開始）" : `戶籍匯入範例（${state.demoStep + 1}/${samples.length}）`;
+  $("#btn-demo").textContent = state.demoStep >= samples.length ? "重新播放範例" : `匯入範例 ${state.demoStep + 1}/${samples.length}`;
   renderTable(); schedule();
 }
 
@@ -434,9 +450,9 @@ function setRelation(p, rel, value) {
   } else p[rel] = value;
   renderTable(); schedule();
 }
-function removePerson(id) {
+async function removePerson(id) {
   const p = byId(id);
-  if (!confirm(`確定刪除「${p ? personLabel(p) : id}」？與此人相關的親屬關係也會一併清除。`)) return;
+  if (!await askConfirm(`確定刪除「${p ? personLabel(p) : id}」？與此人相關的親屬關係也會一併清除。`)) return;
   state.persons = state.persons.filter(x => x.id !== id);
   for (const x of state.persons) {
     for (const rel of ["father", "mother", "spouse"]) if (x[rel] === id) x[rel] = "";
@@ -805,14 +821,14 @@ function init() {
     const rows = document.querySelectorAll("#people tbody tr");
     rows[rows.length - 1]?.querySelectorAll("input")[1]?.focus();
   });
-  $("#btn-sample").addEventListener("click", () => {
-    if (hasData() && !confirm("載入範例會取代目前的資料，確定嗎？")) return;
+  $("#btn-sample").addEventListener("click", async () => {
+    if (hasData() && !await askConfirm("載入範例會取代目前的資料，確定嗎？")) return;
     loadData(JSON.parse($("#sample-data").textContent));
     showMessages([]); renderTable(); schedule();
   });
   $("#btn-demo").addEventListener("click", demoStep);
-  $("#btn-clear").addEventListener("click", () => {
-    if (!hasData() || !confirm("確定清除全部資料？此動作無法復原。")) return;
+  $("#btn-clear").addEventListener("click", async () => {
+    if (!hasData() || !await askConfirm("確定清除全部資料？此動作無法復原。")) return;
     resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
   });
   $("#btn-import").addEventListener("click", () => $("#file").click());

@@ -144,7 +144,7 @@ function drawChart(fam, result, opts = {}) {
   const H = treeBottom + 30 + notesH + 50;
   const dec = fam.p[result.decedentId];
   const svg = el("svg", { xmlns: SVGNS, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
-    "font-family": "'Microsoft JhengHei','PingFang TC','Noto Sans CJK TC','Noto Sans TC',sans-serif" });
+    "font-family": "Inter,'PingFang TC','Microsoft JhengHei UI','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif" });
   svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: "#FFFFFF" }));
 
   // 標題
