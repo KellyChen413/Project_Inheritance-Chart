@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<!--
+  ============================================================================
+  繼承系統表產生器（實體隔離環境資安範本）
+
+  資安設計摘要（供資訊單位審查）
+  1. 單一檔案：HTML、CSS、JavaScript 全部在本檔內，雙擊即可用 Chrome / Edge 開啟。
+  2. 零網路依賴：不引用任何外部網址；下方 Content-Security-Policy 以「雜湊值」
+     僅允許本檔內這一段 <style> 與這一段 <script> 執行，並封鎖所有對外連線
+     （connect-src 'none'）、表單送出（form-action 'none'）與外掛（object-src 'none'）。
+  3. 個資零暫存：資料只存在 JavaScript 記憶體變數；全檔不使用 localStorage、
+     sessionStorage、IndexedDB、Cookie。輸入框設定 autocomplete="off"，避免瀏覽器
+     自動填入紀錄保存個資。重新整理或關閉分頁，資料即消失。
+  4. 在地端輸出：列印、PNG、PDF、SVG 皆由瀏覽器端 JavaScript 直接產生並下載，
+     不呼叫任何伺服器。PDF 由本檔自行組裝（不含作者、標題等中繼資料），
+     下載檔名不含姓名。
+  5. 防範 XSS：全檔不使用 innerHTML、outerHTML、insertAdjacentHTML、document.write、
+     eval；使用者輸入一律以 textContent 寫入畫面，SVG 以 createElementNS 建立。
+
+  ※ 修改本檔的 <style> 或 <script> 內容後，雜湊值會改變，瀏覽器將拒絕執行。
+     請以 Chrome 開啟，按 F12 查看主控台錯誤訊息中提示的 'sha256-…' 值，
+     替換下方 CSP 中對應的雜湊值即可。
+  ============================================================================
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xc8Hzx9O7IidsM9Acj53BmfnedZOJjVhH/Zt6alk7as='; style-src 'sha256-6N4JNiwWTw/Lev44ZWpk0f1dVicW6BWdvCPbFOGphUI='; img-src data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>繼承系統表產生器</title>
+<style>
+:root {
+  --bg: #F3F0EB; --surface: #FFFFFF; --surface-2: #F8F6F2; --ink: #1E2329; --muted: #6B7079;
+  --line: #E2DCD2; --accent: #2F5BD3; --accent-hover: #2349B4; --accent-soft: #EAF0FD;
+  --err: #B42318; --err-soft: #FDEEEC; --warn: #8A5A00; --warn-soft: #FCF3DF; --ok: #1F7A55; --ok-soft: #E7F4ED;
+  --font: "PingFang TC", "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+  --mono: ui-monospace, Consolas, "Courier New", monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.65; }
+header { background: var(--ink); color: #F3F0EB; padding: 18px max(20px, env(safe-area-inset-left)); }
+header .in { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
+header h1 { margin: 0; font-size: 19px; letter-spacing: .04em; }
+header .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+header .tag { font-size: 12.5px; border: 1px solid rgb(255 255 255 / .18); border-radius: 999px; padding: 3px 12px; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px max(20px, env(safe-area-inset-left)) 56px; display: grid; gap: 22px; }
+section.card { background: var(--surface); border: 1px solid #ECE7DF; border-radius: 16px; padding: 26px 28px; box-shadow: 0 1px 3px rgb(30 35 41 / .06); min-width: 0; }
+h2 { font-size: 17px; margin: 0 0 18px; }
+h3 { font-size: 14.5px; margin: 22px 0 10px; color: var(--muted); letter-spacing: .04em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 16px; }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+input[type=text], select { font: inherit; font-size: 14.5px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+input[type=text]:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgb(47 91 211 / .2); }
+input.id { font-family: var(--mono); letter-spacing: .03em; }
+input.bad { border-color: var(--err); background: var(--err-soft); }
+input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+label.chk { display: flex; gap: 8px; align-items: center; font-size: 13.5px; color: var(--muted); cursor: pointer; }
+.hint { font-size: 12px; color: var(--muted); min-height: 18px; font-weight: 400; }
+.hint.bad { color: var(--err); } .hint.warn { color: var(--warn); }
+.scroll { overflow-x: auto; }
+table.kids { border-collapse: collapse; width: 100%; min-width: 820px; }
+table.kids th { text-align: left; font-size: 12.5px; color: var(--muted); padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.kids td { padding: 8px 6px; border-bottom: 1px solid #F0ECE6; vertical-align: top; }
+button { font: inherit; font-size: 14px; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 9px 16px; cursor: pointer; transition: border-color .15s, color .15s, box-shadow .15s, transform .15s, background-color .15s; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 8px rgb(30 35 41 / .08); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
+button.danger { color: var(--err); }
+button.danger:hover:not(:disabled) { border-color: var(--err); color: var(--err); background: var(--err-soft); }
+button.x { padding: 4px 10px; border-color: transparent; color: var(--muted); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; align-items: center; }
+.bar .sp { flex: 1; }
+.msg { border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; border: 1px solid; }
+.msg.err { background: var(--err-soft); color: var(--err); border-color: #F2C6C0; }
+.msg.warn { background: var(--warn-soft); color: var(--warn); border-color: #ECD7A5; }
+.msg.ok { background: var(--ok-soft); color: var(--ok); border-color: #BEDFCC; }
+.msg ul { margin: 6px 0 0; padding-left: 20px; }
+.chart { overflow-x: auto; border: 1px solid #ECE7DF; border-radius: 12px; background: #fff; }
+.chart svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+table.shares { border-collapse: collapse; width: 100%; margin-top: 18px; min-width: 620px; }
+table.shares th, table.shares td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; font-size: 14px; }
+table.shares th { background: var(--surface-2); color: var(--muted); font-size: 12.5px; }
+table.shares td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty { color: var(--muted); text-align: center; padding: 40px 0; margin: 0; }
+footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 0 16px 32px; }
+@media (max-width: 640px) {
+  section.card { padding: 18px 16px; border-radius: 12px; }
+  .bar { display: grid; grid-template-columns: 1fr 1fr; }
+  .bar .sp { display: none; }
+  header .tags { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff; }
+  header, footer, #input-card, .no-print { display: none !important; }
+  main { padding: 0; display: block; max-width: none; }
+  section.card { border: none; box-shadow: none; padding: 0; }
+  .chart { border: none; overflow: visible; }
+  .chart svg { width: 100%; height: auto; }
+  table.shares { min-width: 0; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="in">
+    <h1>繼承系統表產生器</h1>
+    <div class="tags">
+      <span class="tag">單一檔案</span><span class="tag">不連網</span><span class="tag">個資不暫存</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 輸入區：autocomplete="off" 避免瀏覽器記錄個資 -->
+  <section class="card" id="input-card">
+    <h2>輸入資料</h2>
+    <div id="input-msg"></div>
+
+    <h3>被繼承人</h3>
+    <div class="grid">
+      <label class="f">姓名<input type="text" id="dec-name" maxlength="20" autocomplete="off" spellcheck="false"></label>
+      <label class="f">身分證字號<input type="text" id="dec-id" class="id" maxlength="10" autocomplete="off" spellcheck="false"><span class="hint" id="dec-id-hint"></span></label>
+      <label class="f">出生日期（民國）<input type="text" id="dec-birth" maxlength="12" placeholder="例：37/5/12" autocomplete="off"><span class="hint" id="dec-birth-hint"></span></label>
+      <label class="f">死亡日期（民國）<input type="text" id="dec-death" maxlength="12" placeholder="例：114/3/10" autocomplete="off"><span class="hint" id="dec-death-hint"></span></label>
+    </div>
+
+    <h3>配偶</h3>
+    <div class="grid">
+      <label class="f">姓名（無配偶請留空）<input type="text" id="sp-name" maxlength="20" autocomplete="off" spellcheck="false"></label>
+      <label class="f">身分證字號<input type="text" id="sp-id" class="id" maxlength="10" autocomplete="off" spellcheck="false"><span class="hint" id="sp-id-hint"></span></label>
+      <label class="f">出生日期（民國）<input type="text" id="sp-birth" maxlength="12" autocomplete="off"><span class="hint" id="sp-birth-hint"></span></label>
+      <label class="f">狀態
+        <select id="sp-status"><option value="ok">生存</option><option value="dead">繼承開始前死亡</option><option value="renounced">拋棄繼承</option></select>
+      </label>
+    </div>
+
+    <h3>子女</h3>
+    <div class="scroll">
+      <table class="kids">
+        <thead><tr><th>#</th><th>姓名</th><th>性別</th><th>身分證字號</th><th>出生日期（民國）</th><th>狀態</th><th></th></tr></thead>
+        <tbody id="kids"></tbody>
+      </table>
+    </div>
+
+    <div class="bar">
+      <button type="button" id="btn-add-kid">＋ 新增子女</button>
+      <button type="button" id="btn-demo">載入示範資料</button>
+      <span class="sp"></span>
+      <button type="button" class="danger" id="btn-clear">清除所有資料</button>
+      <button type="button" class="primary" id="btn-run">產出繼承系統表</button>
+    </div>
+  </section>
+
+  <!-- 輸出區 -->
+  <section class="card" id="output-card">
+    <h2>繼承系統表</h2>
+    <div id="out-msg"></div>
+    <div class="chart" id="chart"><p class="empty">輸入資料後按「產出繼承系統表」。</p></div>
+    <div class="scroll"><table class="shares" id="shares" hidden></table></div>
+    <div class="bar no-print">
+      <label class="chk"><input type="checkbox" id="chk-full-id">輸出時顯示完整身分證字號</label>
+      <span class="sp"></span>
+      <button type="button" id="btn-print" disabled>列印</button>
+      <button type="button" id="btn-svg" disabled>下載 SVG</button>
+      <button type="button" id="btn-png" disabled>下載 PNG</button>
+      <button type="button" class="primary" id="btn-pdf" disabled>下載 PDF</button>
+    </div>
+  </section>
+</main>
+<footer>本範本示範民法第1138條第一順序（配偶與子女）之判斷；代位繼承、再轉繼承及後順序繼承人未展開。結果僅供承辦參考。</footer>
+
+<script>
+"use strict";
+(() => {
+  /* ======================================================================
+   * 0. 狀態：只存在這個函式範圍內的記憶體變數，不寫入任何瀏覽器儲存空間
+   * ====================================================================== */
+  let kids = [];            // [{ key, name, gender, id, birth, status }]
+  let keySeq = 0;
+  let lastSvg = null;       // 最近一次產生的 SVG 節點（供輸出用）
+
+  const $ = id => document.getElementById(id);
+  const SVGNS = "http://www.w3.org/2000/svg";
+
+  /* DOM 建立工具：文字一律經 textContent 寫入，不解析 HTML */
+  function h(tag, attrs, text) {
+    const e = document.createElement(tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    return e;
+  }
+  function s(tag, attrs, text) {
+    const e = document.createElementNS(SVGNS, tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    return e;
+  }
+  /* 輸入清理：去除控制字元與前後空白，限制長度 */
+  function clean(v, max = 20) {
+    return String(v ?? "").replace(/[\u0000-\u001F\u007F​-‏‪-‮]/g, "").trim().slice(0, max);
+  }
+
+  /* ======================================================================
+   * 1. 驗證：民國日期、身分證字號
+   * ====================================================================== */
+  // 接受 114/3/10、114.3.10、114-3-10、民國114年3月10日、1140310；回傳 {y,m,d} 或 null
+  function parseRoc(v) {
+    v = clean(v, 16);
+    if (!v) return null;
+    if (/^\d{6,7}$/.test(v)) v = `${v.slice(0, -4)}/${v.slice(-4, -2)}/${v.slice(-2)}`;
+    const m = v.match(/^(?:民國)?\s*(\d{1,3})\s*[\/.\-年]\s*(\d{1,2})\s*[\/.\-月]\s*(\d{1,2})\s*日?$/);
+    if (!m) return undefined;
+    const y = +m[1] + 1911, mo = +m[2], d = +m[3];
+    const dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return undefined;
+    return { y, m: mo, d, key: y * 10000 + mo * 100 + d };
+  }
+  const rocText = r => (r ? `民國${r.y - 1911}年${r.m}月${r.d}日` : "");
+
+  // 國民身分證／新式居留證號檢查碼。回傳 "ok" | "checksum" | "format" | ""
+  const LETTER = { A:10,B:11,C:12,D:13,E:14,F:15,G:16,H:17,I:34,J:18,K:19,L:20,M:21,N:22,O:35,P:23,Q:24,R:25,S:26,T:27,U:28,V:29,W:32,X:30,Y:31,Z:33 };
+  function checkId(v) {
+    v = clean(v, 10).toUpperCase();
+    if (!v) return "";
+    if (!/^[A-Z][1289]\d{8}$/.test(v)) return "format";
+    const n = LETTER[v[0]];
+    const w = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1];
+    const digits = [Math.floor(n / 10), n % 10, ...v.slice(1).split("").map(Number)];
+    const sum = digits.reduce((a, d, i) => a + d * w[i], 0);
+    return sum % 10 === 0 ? "ok" : "checksum";
+  }
+  const maskId = v => (v && v.length === 10 ? v.slice(0, 3) + "****" + v.slice(7) : v);
+
+  function hint(id, text, cls) { const e = $(id); e.textContent = text; e.className = "hint" + (cls ? " " + cls : ""); }
+  function idHint(inputId, hintId) {
+    const r = checkId($(inputId).value);
+    $(inputId).classList.toggle("bad", r === "format");
+    hint(hintId, r === "format" ? "格式應為 1 個英文字母＋9 個數字" : r === "checksum" ? "檢查碼不符，請再核對" : "", r === "format" ? "bad" : r === "checksum" ? "warn" : "");
+  }
+  function dateHint(inputId, hintId) {
+    const r = parseRoc($(inputId).value);
+    $(inputId).classList.toggle("bad", r === undefined);
+    hint(hintId, r === undefined ? "日期格式錯誤（例：114/3/10）" : rocText(r), r === undefined ? "bad" : "");
+  }
+
+  /* ======================================================================
+   * 2. 子女列表（輸入）
+   * ====================================================================== */
+  function addKid(data = {}) {
+    kids.push({ key: ++keySeq, name: "", gender: "M", id: "", birth: "", status: "ok", ...data });
+    renderKids();
+  }
+  function renderKids() {
+    const tb = $("kids");
+    tb.replaceChildren();
+    kids.forEach((k, i) => {
+      const tr = h("tr");
+      tr.appendChild(h("td", null, i + 1));
+      const cell = node => { const td = h("td"); td.appendChild(node); tr.appendChild(td); return td; };
+      const txt = (field, max, cls, ph) => {
+        const inp = h("input", { type: "text", maxlength: max, autocomplete: "off", spellcheck: "false", placeholder: ph || "" });
+        if (cls) inp.className = cls;
+        inp.value = k[field];
+        inp.addEventListener("input", () => { k[field] = inp.value; });
+        return inp;
+      };
+      cell(txt("name", 20));
+      const g = h("select");
+      [["M", "男"], ["F", "女"]].forEach(([v, t]) => { const o = h("option", { value: v }, t); if (k.gender === v) o.selected = true; g.appendChild(o); });
+      g.addEventListener("change", () => { k.gender = g.value; });
+      cell(g);
+      cell(txt("id", 10, "id"));
+      cell(txt("birth", 12, "", "例：61/1/20"));
+      const st = h("select");
+      [["ok", "生存"], ["dead", "繼承開始前死亡"], ["renounced", "拋棄繼承"]].forEach(([v, t]) => { const o = h("option", { value: v }, t); if (k.status === v) o.selected = true; st.appendChild(o); });
+      st.addEventListener("change", () => { k.status = st.value; });
+      cell(st);
+      const del = h("button", { type: "button", "aria-label": `刪除第 ${i + 1} 位子女` }, "✕");
+      del.className = "x";
+      del.addEventListener("click", () => { kids = kids.filter(x => x.key !== k.key); renderKids(); });
+      cell(del);
+      tb.appendChild(tr);
+    });
+    if (!kids.length) {
+      const tr = h("tr"), td = h("td", { colspan: 7 }, "尚無子女資料。");
+      td.className = "hint"; tr.appendChild(td); tb.appendChild(tr);
+    }
+  }
+
+  /* ======================================================================
+   * 3. 繼承判斷（民法第1138條第一順序、第1144條第1款）
+   * ====================================================================== */
+  function gcd(a, b) { while (b) [a, b] = [b, a % b]; return a; }
+  const frac = (n, d) => { const g = gcd(n, d); return `${n / g}/${d / g}`; };
+
+  function collect() {
+    const errors = [], warns = [];
+    const dec = { name: clean($("dec-name").value), id: clean($("dec-id").value, 10).toUpperCase(),
+      birth: parseRoc($("dec-birth").value), death: parseRoc($("dec-death").value) };
+    if (!dec.name) errors.push("請輸入被繼承人姓名");
+    if (!dec.death) errors.push(dec.death === undefined ? "被繼承人死亡日期格式錯誤" : "請輸入被繼承人死亡日期");
+    if (dec.birth === undefined) errors.push("被繼承人出生日期格式錯誤");
+    if (dec.birth && dec.death && dec.birth.key >= dec.death.key) errors.push("被繼承人死亡日期早於出生日期");
+
+    const spName = clean($("sp-name").value);
+    const sp = spName ? { name: spName, id: clean($("sp-id").value, 10).toUpperCase(), birth: parseRoc($("sp-birth").value), status: $("sp-status").value } : null;
+    if (sp && sp.birth === undefined) errors.push("配偶出生日期格式錯誤");
+
+    const people = kids.map((k, i) => ({ ...k, name: clean(k.name), id: clean(k.id, 10).toUpperCase(), birthR: parseRoc(k.birth), row: i + 1 }));
+    for (const k of people) {
+      if (!k.name) errors.push(`第 ${k.row} 位子女未填姓名`);
+      if (k.birthR === undefined) errors.push(`第 ${k.row} 位子女（${k.name || "未命名"}）出生日期格式錯誤`);
+      if (k.birthR && dec.death && k.birthR.key > dec.death.key) errors.push(`${k.name} 出生於繼承開始之後，請確認`);
+    }
+    for (const [who, id] of [[dec.name, dec.id], [sp?.name, sp?.id], ...people.map(k => [k.name, k.id])]) {
+      const r = checkId(id || "");
+      if (r === "format") errors.push(`${who || "未命名"} 的身分證字號格式錯誤`);
+      if (r === "checksum") warns.push(`${who || "未命名"} 的身分證字號檢查碼不符，請再核對`);
+    }
+    const ids = [dec.id, sp?.id, ...people.map(k => k.id)].filter(Boolean);
+    if (new Set(ids).size !== ids.length) errors.push("有重複的身分證字號");
+    return { dec, sp, kids: people, errors, warns };
+  }
+
+  function decide(c) {
+    // 子女稱謂：依性別與輸入順序（或出生日期）排列
+    const ord = ["長", "次", "三", "四", "五", "六", "七", "八", "九", "十"];
+    const sorted = [...c.kids].sort((a, b) => (a.birthR?.key || 0) - (b.birthR?.key || 0) || a.row - b.row);
+    const cnt = { M: 0, F: 0 };
+    for (const k of sorted) k.title = `${ord[cnt[k.gender]++] || ""}${k.gender === "M" ? "男" : "女"}`;
+
+    const heirs = c.kids.filter(k => k.status === "ok");
+    const spouseOk = !!(c.sp && c.sp.status === "ok");
+    const notes = [];
+    for (const k of c.kids) {
+      if (k.status === "dead") notes.push(`${k.name}（${k.title}）繼承開始前死亡；如有直系血親卑親屬，得代位繼承（民法第1140條），本範本未展開。`);
+      if (k.status === "renounced") notes.push(`${k.name}（${k.title}）拋棄繼承，溯及繼承開始時無繼承權（民法第1175條）。`);
+    }
+    if (c.sp && c.sp.status === "dead") notes.push(`配偶 ${c.sp.name} 於繼承開始前死亡，不得繼承。`);
+    if (c.sp && c.sp.status === "renounced") notes.push(`配偶 ${c.sp.name} 拋棄繼承。`);
+
+    if (!heirs.length) {
+      return { ok: false, notes, reason: "無第一順序繼承人。應依民法第1138條、第1144條由父母、兄弟姊妹或祖父母與配偶共同繼承，本範本未涵蓋，請另行判斷。" };
+    }
+    const n = heirs.length + (spouseOk ? 1 : 0);
+    const share = frac(1, n);
+    for (const k of c.kids) k.share = k.status === "ok" ? share : "—";
+    if (c.sp) c.sp.share = spouseOk ? share : "—";
+    return { ok: true, notes, n, share, spouseOk };
+  }
+
+  /* ======================================================================
+   * 4. 繪製 SVG 樹狀圖（純原生，createElementNS）
+   * ====================================================================== */
+  const BOX_W = 168, BOX_H = 104, GAP = 28, ROW = 170, PAD = 40;
+  const C = {
+    dec:  { fill: "#FBEEEB", stroke: "#B3261E" },
+    heir: { fill: "#E8F1FC", stroke: "#2F5BD3" },
+    out:  { fill: "#F4F4F4", stroke: "#9AA0A8", dash: "5 3" },
+    ren:  { fill: "#FFF0EE", stroke: "#B3261E", dash: "5 3" },
+  };
+
+  function box(g, x, y, kind, lines) {
+    const c = C[kind];
+    if (kind === "dec") g.appendChild(s("rect", { x: x - 4, y: y - 4, width: BOX_W + 8, height: BOX_H + 8, rx: 12, fill: "none", stroke: c.stroke, "stroke-width": 1.5 }));
+    g.appendChild(s("rect", { x, y, width: BOX_W, height: BOX_H, rx: 9, fill: c.fill, stroke: c.stroke, "stroke-width": 1.6, "stroke-dasharray": c.dash || "none" }));
+    const lh = l => l.size + 5;
+    const total = lines.reduce((a, l) => a + lh(l), 0);
+    let ty = y + (BOX_H - total) / 2;
+    for (const l of lines) {
+      ty += lh(l);
+      const size = Math.min(l.size, (BOX_W - 14) / Math.max(1, [...l.t].length) * 1.05);   // 過長自動縮小
+      g.appendChild(s("text", { x: x + BOX_W / 2, y: ty - 4, "text-anchor": "middle", "font-size": size.toFixed(1),
+        "font-weight": l.bold ? 700 : 400, fill: l.color || "#1A1D21" }, l.t));
+    }
+  }
+
+  function drawTree(c, r, fullId) {
+    const showId = v => (v ? (fullId ? v : maskId(v)) : "");
+    const n = Math.max(c.kids.length, 1);
+    const W = Math.max(n * BOX_W + (n - 1) * GAP + PAD * 2, 2 * BOX_W + 60 + PAD * 2, 760);
+    const notesH = r.notes.length ? 34 + r.notes.length * 22 : 0;
+    const H = 110 + BOX_H + (c.kids.length ? ROW : 0) + 40 + notesH + 40;
+    const svg = s("svg", { xmlns: SVGNS, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
+      "font-family": "'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif" });
+    svg.appendChild(s("rect", { x: 0, y: 0, width: W, height: H, fill: "#FFFFFF" }));
+    svg.appendChild(s("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 24, "font-weight": 700, fill: "#1A1D21" }, "繼承系統表"));
+    svg.appendChild(s("text", { x: W / 2, y: 70, "text-anchor": "middle", "font-size": 14, fill: "#3B414A" },
+      `被繼承人：${c.dec.name}（${rocText(c.dec.death)}死亡）　繼承人 ${r.ok ? r.n : 0} 人`));
+
+    const lines = s("g", { stroke: "#4A4F57", "stroke-width": 1.4, fill: "none" });
+    svg.appendChild(lines);
+    const top = 100;
+    const pairW = c.sp ? BOX_W * 2 + 60 : BOX_W;
+    const decX = W / 2 - pairW / 2, spX = decX + BOX_W + 60;
+    const mid = c.sp ? { x: decX + BOX_W + 30, y: top + BOX_H / 2 } : { x: decX + BOX_W / 2, y: top + BOX_H };
+
+    box(svg, decX, top, "dec", [
+      { t: "被繼承人", size: 12, bold: true }, { t: c.dec.name, size: 16, bold: true },
+      { t: showId(c.dec.id), size: 10.5 }, { t: c.dec.death ? `${rocText(c.dec.death)}歿` : "", size: 10.5 },
+    ].filter(l => l.t));
+
+    if (c.sp) {
+      lines.appendChild(s("line", { x1: decX + BOX_W, y1: mid.y - 2, x2: spX, y2: mid.y - 2, "stroke-width": 2 }));
+      lines.appendChild(s("line", { x1: decX + BOX_W, y1: mid.y + 2, x2: spX, y2: mid.y + 2, "stroke-width": 1 }));
+      const k = c.sp.status === "ok" ? "heir" : c.sp.status === "renounced" ? "ren" : "out";
+      box(svg, spX, top, k, [
+        { t: "配偶", size: 12, bold: true }, { t: c.sp.name, size: 16, bold: true }, { t: showId(c.sp.id), size: 10.5 },
+        c.sp.status === "ok" ? { t: `應繼分 ${c.sp.share}`, size: 13, bold: true, color: "#2349B4" }
+          : { t: c.sp.status === "renounced" ? "拋棄繼承・無繼承權" : "繼承開始前死亡", size: 11, bold: true, color: k === "ren" ? "#B42318" : "#5A6068" },
+      ].filter(l => l.t));
+    }
+
+    if (c.kids.length) {
+      const y = top + ROW;
+      const rowW = c.kids.length * BOX_W + (c.kids.length - 1) * GAP;
+      let x = W / 2 - rowW / 2;
+      const busY = y - 34;
+      lines.appendChild(s("line", { x1: mid.x, y1: mid.y, x2: mid.x, y2: busY }));
+      const xs = c.kids.map((_, i) => x + i * (BOX_W + GAP) + BOX_W / 2);
+      lines.appendChild(s("line", { x1: Math.min(mid.x, ...xs), y1: busY, x2: Math.max(mid.x, ...xs), y2: busY }));
+      for (const cx of xs) lines.appendChild(s("line", { x1: cx, y1: busY, x2: cx, y2: y }));
+      if (c.sp) svg.appendChild(s("circle", { cx: mid.x, cy: mid.y, r: 3.5, fill: "#4A4F57" }));
+      c.kids.forEach((k, i) => {
+        const kind = k.status === "ok" ? "heir" : k.status === "renounced" ? "ren" : "out";
+        box(svg, x + i * (BOX_W + GAP), y, kind, [
+          { t: k.title, size: 12, bold: true }, { t: k.name, size: 16, bold: true }, { t: showId(k.id), size: 10.5 },
+          k.status === "ok" ? { t: `應繼分 ${k.share}`, size: 13, bold: true, color: "#2349B4" }
+            : { t: k.status === "renounced" ? "拋棄繼承・無繼承權" : "繼承開始前死亡", size: 11, bold: true, color: kind === "ren" ? "#B42318" : "#5A6068" },
+        ].filter(l => l.t));
+      });
+    }
+
+    let ny = top + BOX_H + (c.kids.length ? ROW : 0) + 40;
+    if (r.notes.length) {
+      svg.appendChild(s("text", { x: PAD, y: ny, "font-size": 14, "font-weight": 700, fill: "#1A1D21" }, "備註"));
+      r.notes.forEach((t, i) => svg.appendChild(s("text", { x: PAD, y: ny + 24 + i * 22, "font-size": 12.5, fill: "#3B414A" }, `※${i + 1}　${t}`)));
+    }
+    svg.appendChild(s("text", { x: PAD, y: H - 16, "font-size": 11, fill: "#7A8088" }, "本表由離線工具依民法第1138條、第1144條自動產生，僅供承辦參考，應與戶籍資料核對。"));
+    return svg;
+  }
+
+  function shareTable(c, r, fullId) {
+    const t = $("shares");
+    t.replaceChildren();
+    const head = t.createTHead().insertRow();
+    ["稱謂", "姓名", "身分證字號", "狀態", "應繼分"].forEach(x => head.appendChild(h("th", null, x)));
+    const body = t.createTBody();
+    const row = (title, p, status, share) => {
+      const tr = body.insertRow();
+      [title, p.name, p.id ? (fullId ? p.id : maskId(p.id)) : "", status, share].forEach((v, i) => {
+        const td = tr.insertCell(); td.textContent = v; if (i === 4) td.className = "n";
+      });
+    };
+    const label = st => ({ ok: "繼承", dead: "繼承開始前死亡", renounced: "拋棄繼承" }[st]);
+    if (c.sp) row("配偶", c.sp, label(c.sp.status), c.sp.share);
+    for (const k of c.kids) row(k.title, k, label(k.status), k.share);
+    t.hidden = false;
+  }
+
+  /* ======================================================================
+   * 5. 產出、清除
+   * ====================================================================== */
+  function showMsg(boxId, cls, title, items) {
+    const b = $(boxId);
+    b.replaceChildren();
+    if (!title) return;
+    const d = h("div"); d.className = "msg " + cls;
+    d.appendChild(h("strong", null, title));
+    if (items && items.length) { const ul = h("ul"); items.forEach(x => ul.appendChild(h("li", null, x))); d.appendChild(ul); }
+    b.appendChild(d);
+  }
+  function setOutputButtons(on) { ["btn-print", "btn-svg", "btn-png", "btn-pdf"].forEach(id => { $(id).disabled = !on; }); }
+
+  function run() {
+    const c = collect();
+    showMsg("out-msg");
+    if (c.errors.length) {
+      showMsg("input-msg", "err", `有 ${c.errors.length} 項資料需要修正`, c.errors);
+      setOutputButtons(false);
+      return;
+    }
+    showMsg("input-msg", c.warns.length ? "warn" : "", c.warns.length ? "請確認" : "", c.warns);
+    const r = decide(c);
+    const fullId = $("chk-full-id").checked;
+    const chart = $("chart");
+    chart.replaceChildren();
+    if (!r.ok) showMsg("out-msg", "warn", r.reason, r.notes);
+    lastSvg = drawTree(c, r, fullId);
+    chart.appendChild(lastSvg);
+    if (r.ok) shareTable(c, r, fullId); else $("shares").hidden = true;
+    setOutputButtons(true);
+  }
+
+  // 清除：清空記憶體中的資料與畫面，並移除所有欄位內容
+  function clearAll() {
+    kids = []; lastSvg = null;
+    for (const el of document.querySelectorAll("#input-card input[type=text]")) el.value = "";
+    $("sp-status").value = "ok";
+    $("chk-full-id").checked = false;
+    for (const id of ["dec-id-hint", "dec-birth-hint", "dec-death-hint", "sp-id-hint", "sp-birth-hint"]) hint(id, "", "");
+    for (const el of document.querySelectorAll("input.bad")) el.classList.remove("bad");
+    renderKids();
+    showMsg("input-msg"); showMsg("out-msg");
+    $("chart").replaceChildren(h("p", { class: "empty" }, "輸入資料後按「產出繼承系統表」。"));
+    $("shares").replaceChildren(); $("shares").hidden = true;
+    setOutputButtons(false);
+  }
+
+  // 示範資料（全部虛構；身分證字號留空，避免與真實號碼重複）
+  function loadDemo() {
+    clearAll();
+    $("dec-name").value = "王大明"; $("dec-birth").value = "37/5/12"; $("dec-death").value = "114/3/10";
+    $("sp-name").value = "林美華"; $("sp-birth").value = "40/9/3";
+    kids = [];
+    [["王志強", "M", "61/1/20", "ok"], ["王志偉", "M", "64/6/30", "dead"], ["王淑芬", "F", "67/10/5", "renounced"], ["王淑娟", "F", "70/2/14", "ok"]]
+      .forEach(([name, gender, birth, status]) => kids.push({ key: ++keySeq, name, gender, id: "", birth, status }));
+    renderKids();
+    dateHint("dec-birth", "dec-birth-hint"); dateHint("dec-death", "dec-death-hint"); dateHint("sp-birth", "sp-birth-hint");
+    run();
+  }
+
+  /* ======================================================================
+   * 6. 在地端輸出：全部由瀏覽器產生，不傳送任何資料
+   * ====================================================================== */
+  // 下載檔名不含姓名，避免下載資料夾列表洩漏個資
+  function fileName(ext) {
+    const d = new Date();
+    return `繼承系統表_${d.getFullYear() - 1911}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.${ext}`;
+  }
+  function download(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = h("a", { href: url, download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);      // 立即釋放暫存的 blob 位址
+  }
+  function svgText() { return new XMLSerializer().serializeToString(lastSvg); }
+
+  // SVG → Canvas（2 倍解析度）
+  function toCanvas(scale = 2) {
+    return new Promise((resolve, reject) => {
+      const w = +lastSvg.getAttribute("width"), hgt = +lastSvg.getAttribute("height");
+      const img = new Image();
+      img.onload = () => {
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(w * scale); cv.height = Math.round(hgt * scale);
+        const ctx = cv.getContext("2d");
+        ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.drawImage(img, 0, 0, cv.width, cv.height);
+        resolve(cv);
+      };
+      img.onerror = () => reject(new Error("圖片轉換失敗"));
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText());
+    });
+  }
+
+  // 自行組裝 PDF（A4 橫式，嵌入一張 JPEG 影像），不含任何中繼資料
+  function buildPdf(jpegBytes, imgW, imgH) {
+    const PW = 842, PH = 595, M = 28;                          // A4 橫式，單位 pt
+    const scale = Math.min((PW - 2 * M) / imgW, (PH - 2 * M) / imgH);
+    const dw = imgW * scale, dh = imgH * scale, dx = (PW - dw) / 2, dy = (PH - dh) / 2;
+    const enc = new TextEncoder();
+    const chunks = [], offsets = [];
+    let len = 0;
+    const push = b => { const u = typeof b === "string" ? enc.encode(b) : b; chunks.push(u); len += u.length; };
+    const content = `q\n${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${dx.toFixed(2)} ${dy.toFixed(2)} cm\n/Im0 Do\nQ\n`;
+    push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    const obj = (n, body) => { offsets[n] = len; push(`${n} 0 obj\n`); body(); push("\nendobj\n"); };
+    obj(1, () => push("<< /Type /Catalog /Pages 2 0 R >>"));
+    obj(2, () => push("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"));
+    obj(3, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
+    obj(4, () => {
+      push(`<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+      push(jpegBytes); push("\nendstream");
+    });
+    obj(5, () => push(`<< /Length ${enc.encode(content).length} >>\nstream\n${content}endstream`));
+    const xref = len;
+    let x = "xref\n0 6\n0000000000 65535 f \n";
+    for (let i = 1; i <= 5; i++) x += String(offsets[i]).padStart(10, "0") + " 00000 n \n";
+    push(x + `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(chunks, { type: "application/pdf" });
+  }
+  function dataUrlBytes(url) {
+    const bin = atob(url.slice(url.indexOf(",") + 1));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function exportPng() {
+    try { const cv = await toCanvas(2); cv.toBlob(b => download(b, fileName("png")), "image/png"); }
+    catch (e) { showMsg("out-msg", "err", e.message); }
+  }
+  async function exportPdf() {
+    try {
+      const cv = await toCanvas(2.5);
+      download(buildPdf(dataUrlBytes(cv.toDataURL("image/jpeg", 0.92)), cv.width, cv.height), fileName("pdf"));
+    } catch (e) { showMsg("out-msg", "err", e.message); }
+  }
+
+  /* ======================================================================
+   * 7. 事件綁定（不使用 HTML 內嵌事件屬性，符合 CSP）
+   * ====================================================================== */
+  $("btn-add-kid").addEventListener("click", () => addKid());
+  $("btn-demo").addEventListener("click", loadDemo);
+  $("btn-clear").addEventListener("click", clearAll);
+  $("btn-run").addEventListener("click", run);
+  $("btn-print").addEventListener("click", () => window.print());
+  $("btn-svg").addEventListener("click", () => download(new Blob([svgText()], { type: "image/svg+xml" }), fileName("svg")));
+  $("btn-png").addEventListener("click", exportPng);
+  $("btn-pdf").addEventListener("click", exportPdf);
+  $("chk-full-id").addEventListener("change", () => { if (lastSvg) run(); });
+  for (const [i, hId] of [["dec-id", "dec-id-hint"], ["sp-id", "sp-id-hint"]]) $(i).addEventListener("input", () => idHint(i, hId));
+  for (const [i, hId] of [["dec-birth", "dec-birth-hint"], ["dec-death", "dec-death-hint"], ["sp-birth", "sp-birth-hint"]]) $(i).addEventListener("input", () => dateHint(i, hId));
+
+  // 離開或重新整理頁面時主動清空（含瀏覽器的「上一頁」快取）
+  window.addEventListener("pagehide", clearAll);
+  window.addEventListener("pageshow", e => { if (e.persisted) clearAll(); });
+
+  renderKids();
+})();
+</script>
+</body>
+</html>

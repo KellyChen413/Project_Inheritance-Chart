@@ -82,16 +82,21 @@ function exportData() {
       death: parseDate(p.deathRaw) || p.deathRaw || null, birthRaw: undefined, deathRaw: undefined })),
   };
   const dec = byId(state.decedent);
-  download(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), `繼承案件_${dec ? dec.name : "未命名"}.json`);
+  download(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), safeName("繼承案件", "json"));
 }
 function exportCsvFile() {
   const persons = state.persons.map(p => ({ ...p, birth: parseDate(p.birthRaw) || p.birthRaw, death: parseDate(p.deathRaw) || p.deathRaw, renounced: renouncedOf(p) }));
   const dec = byId(state.decedent);
-  download(new Blob([exportCsv(persons, state.decedent)], { type: "text/csv;charset=utf-8" }), `繼承資料_${dec ? dec.name : "未命名"}.csv`);
+  download(new Blob([exportCsv(persons, state.decedent)], { type: "text/csv;charset=utf-8" }), safeName("繼承資料", "csv"));
 }
 function downloadTemplate() {
   const raw = JSON.parse($("#sample-data").textContent);
   download(new Blob([exportCsv(raw.persons, raw.decedent)], { type: "text/csv;charset=utf-8" }), "繼承資料範本.csv");
+}
+/* 下載檔名只含日期，不含姓名，避免下載資料夾的檔案列表洩漏個資 */
+function safeName(prefix, ext) {
+  const d = new Date();
+  return `${prefix}_${d.getFullYear() - 1911}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.${ext}`;
 }
 function download(blob, name) {
   const a = document.createElement("a");
@@ -793,7 +798,7 @@ function exportXlsx() {
   const merges = ["A1:I1", "A2:I2", "A3:I3", `A${totalRow}:G${totalRow}`];
   d.notes.forEach((_, i) => merges.push(`A${totalRow + 2 + i}:I${totalRow + 2 + i}`));
   merges.push(`A${rows.length}:I${rows.length}`);
-  download(buildXlsx(rows, { widths: [6, 12, 10, 13, 11, 11, 26, 9, 34], merges }), `繼承系統表_${d.head.name}.xlsx`);
+  download(buildXlsx(rows, { widths: [6, 12, 10, 13, 11, 11, 26, 9, 34], merges }), safeName("繼承系統表", "xlsx"));
 }
 
 function rulesSection(fam, result) {
@@ -846,9 +851,13 @@ function init() {
   $("#btn-svg").addEventListener("click", () => {
     const svg = document.querySelector(".chart-wrap svg"); if (!svg) return;
     const dec = byId(state.decedent);
-    download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), `繼承系統表_${dec ? dec.name : ""}.svg`);
+    download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), safeName("繼承系統表", "svg"));
   });
   window.addEventListener("beforeunload", e => { if (hasData()) { e.preventDefault(); e.returnValue = ""; } });
+  // 離開或重新整理頁面時主動清空記憶體中的資料（含瀏覽器「上一頁」快取）
+  const wipe = () => { resetCase(); state.last = null; showMessages([]); renderTable(); $("#report-body").replaceChildren(); };
+  window.addEventListener("pagehide", wipe);
+  window.addEventListener("pageshow", e => { if (e.persisted) { wipe(); compute(); } });
   renderTable(); compute();
 }
 document.addEventListener("DOMContentLoaded", init);

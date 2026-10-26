@@ -40,6 +40,15 @@ faces = "\n".join(
     for w in (400, 500, 600, 700))
 html = html.replace("/*FONTS*/", faces)
 
+# 安全政策：以 SHA-256 雜湊只允許本檔案內既有的 <script> 與 <style>（JSON 資料區塊不會執行，不需列入）
+import hashlib, re
+def _hash(t): return "'sha256-" + base64.b64encode(hashlib.sha256(t.encode("utf-8")).digest()).decode() + "'"
+_body = html[html.index("</head>"):]
+_scripts = re.findall(r"<script>(.*?)</script>", _body, re.S)
+_styles = re.findall(r"<style>(.*?)</style>", html[html.index("<title>"):html.index("</head>")], re.S)
+assert len(_scripts) == 3 and len(_styles) == 1, (len(_scripts), len(_styles))
+html = html.replace("__SCRIPT_HASHES__", " ".join(_hash(x) for x in _scripts)).replace("__STYLE_HASHES__", " ".join(_hash(x) for x in _styles))
+
 out = here.parent / "繼承系統表產生器.html"
 out.write_text(html, encoding="utf-8")
 print(out, f"{out.stat().st_size / 1024:.0f} KB")
