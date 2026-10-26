@@ -7,7 +7,11 @@
 const state = { persons: [], decedent: "", seq: 1, queried: new Set(), files: [], demoStep: 0, view: "tree", showFullUid: false };
 const $ = sel => document.querySelector(sel);
 const KIND_LABEL = { kin: "親等關聯資料", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
-const STATUS_LABEL = { "": "未查證", none: "查無拋棄", yes: "已拋棄" };
+const STATUS_LABEL = { "": "未查證", none: "查無拋棄", claimed: "已聲明拋棄（待核實）", yes: "已拋棄（已核實）" };
+const FETUS_LABEL = { "": "（非胎兒）", pending: "胎兒・待出生", live: "胎兒・已活產", stillbirth: "胎兒・死產" };
+// 拋棄繼承：已核實與已聲明都納入計算；已聲明者標示待核實
+const isRenounceStatus = v => v === "yes" || v === "claimed";
+const isUnverified = v => !v || v === "claimed";
 
 function isoToRoc(iso) {
   if (!iso) return "";
@@ -22,12 +26,13 @@ function newId() {
 }
 function blankPerson() {
   return { id: newId(), uid: "", name: "", title: "", titleAuto: true, gender: "", birthRaw: "", deathRaw: "",
+    deathTime: "", fetus: "", marriageEndRaw: "",
     father: "", mother: "", spouse: "", fatherName: "", motherName: "", spouseName: "",
     fatherUid: "", motherUid: "", spouseUid: "", renounceChecks: {}, lost_right: [], sources: [] };
 }
 const byId = id => state.persons.find(p => p.id === id);
 const uidShow = u => (state.showFullUid ? (u || "") : maskUid(u || ""));
-const renouncedOf = p => Object.entries(p.renounceChecks || {}).filter(([, v]) => v.status === "yes").map(([k]) => k);
+const renouncedOf = p => Object.entries(p.renounceChecks || {}).filter(([, v]) => isRenounceStatus(v.status)).map(([k]) => k);
 function hasData() { return state.persons.length > 0; }
 
 /* 頁內確認視窗（取代瀏覽器的 confirm，線上檢視器也能使用） */
@@ -57,6 +62,8 @@ function loadData(raw) {
       titleAuto: r.titleAuto !== undefined ? !!r.titleAuto : !r.title, gender: r.gender || "",
       birthRaw: parseDate(r.birth) ? isoToRoc(parseDate(r.birth)) : (r.birth || ""),
       deathRaw: parseDate(r.death) ? isoToRoc(parseDate(r.death)) : (r.death || ""),
+      deathTime: r.deathTime || "", fetus: ["pending", "live", "stillbirth"].includes(r.fetus) ? r.fetus : "",
+      marriageEndRaw: parseDate(r.marriageEnd) ? isoToRoc(parseDate(r.marriageEnd)) : (r.marriageEnd || r.marriageEndRaw || ""),
       father: r.father || "", mother: r.mother || "", spouse: r.spouse || "",
       fatherName: r.fatherName || "", motherName: r.motherName || "", spouseName: r.spouseName || "",
       renounceChecks: r.renounceChecks && typeof r.renounceChecks === "object" ? r.renounceChecks : {},
@@ -79,7 +86,8 @@ function exportData() {
     _說明: "繼承系統表案件檔。含個人資料，請依單位規定保管。",
     decedent: state.decedent, queried: [...state.queried], files: state.files,
     persons: state.persons.map(p => ({ ...p, birth: parseDate(p.birthRaw) || p.birthRaw || null,
-      death: parseDate(p.deathRaw) || p.deathRaw || null, birthRaw: undefined, deathRaw: undefined })),
+      death: parseDate(p.deathRaw) || p.deathRaw || null, marriageEnd: parseDate(p.marriageEndRaw) || p.marriageEndRaw || null,
+      birthRaw: undefined, deathRaw: undefined, marriageEndRaw: undefined })),
   };
   const dec = byId(state.decedent);
   download(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), safeName("繼承案件", "json"));
@@ -379,8 +387,19 @@ function renderTable() {
     [["", "—"], ["M", "男"], ["F", "女"]].forEach(([v, t]) => option(g, v, t, p.gender));
     g.addEventListener("change", () => { p.gender = g.value; renderTable(); schedule(); });
     td(g);
-    td(text("birthRaw", "民國 年/月/日", "date"));
-    td(text("deathRaw", "（存歿）", "date"));
+    const birthCell = td(text("birthRaw", "民國 年/月/日", "date"));
+    const fs = document.createElement("select");
+    fs.className = "sub"; fs.title = "胎兒狀態（民法第7條）：繼承開始時已受胎、尚未出生者請設定";
+    for (const [v, t] of Object.entries(FETUS_LABEL)) option(fs, v, t, p.fetus || "");
+    fs.addEventListener("change", () => { p.fetus = fs.value; renderTable(); schedule(); });
+    birthCell.appendChild(fs);
+    const deathCell = td(text("deathRaw", "（存歿）", "date"));
+    const tm = document.createElement("input");
+    tm.type = "text"; tm.className = "sub"; tm.placeholder = "死亡時間（選填）"; tm.maxLength = 5; tm.autocomplete = "off";
+    tm.title = "與他人同日死亡時，填寫時間（24 小時制，例 08:30）以判斷先後；不填則依民法第11條推定同時死亡";
+    tm.value = p.deathTime || "";
+    tm.addEventListener("input", () => { p.deathTime = tm.value.trim(); tm.classList.toggle("bad", !!tm.value.trim() && !/^([01]\d|2[0-3]):[0-5]\d$/.test(tm.value.trim())); schedule(); });
+    deathCell.appendChild(tm);
 
     for (const rel of ["father", "mother", "spouse"]) {
       const s = document.createElement("select");
@@ -388,6 +407,14 @@ function renderTable() {
       fillRelSelect(s, p, rel);
       s.addEventListener("change", () => setRelation(p, rel, s.value));
       const cell = td(s);
+      if (rel === "spouse") {
+        const me = document.createElement("input");
+        me.type = "text"; me.className = "sub"; me.placeholder = "婚姻終止日（選填）"; me.autocomplete = "off";
+        me.title = "與配偶離婚等婚姻終止日期；於繼承開始前終止者，不具配偶繼承權";
+        me.value = p.marriageEndRaw || "";
+        me.addEventListener("input", () => { p.marriageEndRaw = me.value; me.classList.toggle("bad", !!me.value.trim() && parseDate(me.value) === undefined); schedule(); });
+        cell.appendChild(me);
+      }
       const nm = p[rel + "Name"];
       if (nm && !p[rel]) { const h = document.createElement("small"); h.className = "note"; h.textContent = `戶籍記載：${nm}`; h.title = "此人不在名單中；如與繼承有關，請調閱其資料"; cell.appendChild(h); }
     }
@@ -483,6 +510,8 @@ function enginePersons() {
   return state.persons.map(p => ({
     id: p.id, uid: (p.uid || "").trim(), name: (p.name || "").trim(), title: (p.title || "").trim(), gender: p.gender,
     birth: parseDate(p.birthRaw), death: parseDate(p.deathRaw), _birthRaw: (p.birthRaw || "").trim(), _deathRaw: (p.deathRaw || "").trim(),
+    deathTime: (p.deathTime || "").trim(), fetus: p.fetus || "",
+    marriageEnd: parseDate(p.marriageEndRaw), _marriageEndRaw: (p.marriageEndRaw || "").trim(),
     father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
     fatherName: p.fatherName || "", motherName: p.motherName || "",
     renounced: renouncedOf(p), lost_right: p.lost_right,
@@ -507,27 +536,26 @@ function compute() {
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
   if (errors.length) { out.replaceChildren(mkEl("p", "placeholder", "資料修正完成後，系統表會自動顯示在這裡。")); return; }
 
-  const fam = new Family(persons.map(p => ({ ...p, birth: p.birth || null, death: p.death || null })));
+  const fam = new Family(persons.map(p => ({ ...p, birth: p.birth || null, death: p.death || null, marriageEnd: p.marriageEnd || null })));
   let result;
   try { result = new InheritanceEngine(fam).distribute(state.decedent); }
   catch (e) { box("error", "計算時發生問題", [e.message]); return; }
 
   const items = renounceItemsWithRecords(fam, result);
-  const pending = items.filter(x => !checkOf(x).status).length;
+  const pending = items.filter(x => isUnverified(checkOf(x).status)).length;
   const follow = followUps(fam, result, state.queried);
-  const mustFollow = follow.filter(f => f.level === "必要").length;
-  renderFollowups(follow);
+  renderFollowups(follow, result);
+  if (result.caseStatus === "no_known_heirs") box("warn", "目前資料中查無繼承人", ["這不等於法律上無人承受。確認無人承受（民法第1177條）前，應先完成親屬資料調查，並確認是否有待調閱或待確認事項。"]);
 
   out.replaceChildren();
   state.last = { fam, result, items };
-  const notes = [];
-  if (mustFollow) notes.push(`尚有 ${mustFollow} 項資料待調閱`);
-  if (pending) notes.push(`${pending} 人未查證拋棄繼承`);
+  const notes = caseNotes(fam, result, items);
   const wrap = mkEl("div", "chart-wrap");
   const remarkExtra = {};
   for (const it of items) {
     const c = checkOf(it);
     if (c.status === "yes" && (c.court || c.caseNo)) remarkExtra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
+    if (c.status === "claimed") remarkExtra[it.pid] = "（已聲明拋棄，待核實法院文件）";
   }
   wrap.appendChild(drawChart(fam, result, { note: notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "", remarkExtra }));
   const treeView = mkEl("div", "view-tree"), formView = mkEl("div", "view-form");
@@ -552,20 +580,38 @@ function compute() {
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = false;
 }
 
-/* 待調閱清單 */
-function renderFollowups(list) {
+/* 案件尚未確定的原因（樹狀圖、表格式、Excel 共用） */
+function caseNotes(fam, result, items) {
+  const notes = [];
+  const must = followUps(fam, result, state.queried).filter(f => f.level === "必要").length;
+  const unchecked = items.filter(x => !checkOf(x).status).length;
+  const claimed = items.filter(x => checkOf(x).status === "claimed").length;
+  const kinds = new Set(result.pendingAll.map(p => p.kind));
+  if (must) notes.push(`尚有 ${must} 項資料待調閱`);
+  if (unchecked) notes.push(`${unchecked} 人未查證拋棄繼承`);
+  if (claimed) notes.push(`${claimed} 人拋棄繼承待核實文件`);
+  if (kinds.has("fetus")) notes.push("有胎兒尚未出生（應保留其應繼分）");
+  if (kinds.has("same-day")) notes.push("有同日死亡、先後待確認者");
+  if (result.caseStatus === "no_known_heirs") notes.push("目前查無繼承人");
+  return notes;
+}
+
+/* 待調閱清單（含引擎判斷的待確認事實） */
+function renderFollowups(list, result) {
+  list = [...list, ...((result && result.pendingAll) || []).map(p => ({ level: "待確認", pid: p.pid, text: p.text, fact: true }))];
   const box = $("#followups");
   box.replaceChildren();
   if (!state.decedent) return;
   const sec = mkEl("section", "followups");
-  const must = list.filter(f => f.level === "必要");
-  sec.appendChild(mkEl("h3", "", must.length ? `待調閱清單（${must.length} 項必要）` : "待調閱清單"));
+  const must = list.filter(f => f.level !== "建議");
+  sec.appendChild(mkEl("h3", "", must.length ? `待調閱與待確認事項（${must.length} 項）` : "待調閱與待確認事項"));
   if (!list.length) { sec.appendChild(mkEl("p", "ok-line", "✓ 依目前資料，沒有需要再往下調閱的對象。")); box.appendChild(sec); return; }
   const ul = mkEl("ul");
   for (const f of list) {
-    const li = mkEl("li", f.level === "必要" ? "must" : "maybe");
+    const li = mkEl("li", f.level === "建議" ? "maybe" : "must");
     li.appendChild(mkEl("span", "chip", f.level));
     li.appendChild(mkEl("span", "txt", f.text));
+    if (f.fact) { ul.appendChild(li); continue; }       // 事實待確認：需修改資料（胎兒狀態、死亡時間）才會消失
     const b = mkEl("button", "", "已調閱／已確認"); b.type = "button";
     b.title = "已調閱但查無資料，或已人工確認時按下，此項即不再提示";
     b.addEventListener("click", () => { state.queried.add(f.pid); schedule(); });
@@ -591,7 +637,7 @@ function renounceItemsWithRecords(fam, result) {
 }
 function renouncePanel(fam, result, items, pending) {
   const sec = mkEl("section", "renounce-panel");
-  sec.appendChild(mkEl("h3", "", `拋棄繼承查證（共 ${items.length} 人，${pending ? `${pending} 人未查證` : "均已查證"}）`));
+  sec.appendChild(mkEl("h3", "", `拋棄繼承查證（共 ${items.length} 人，${pending ? `${pending} 人未完成查證或核實` : "均已查證"}）`));
   sec.appendChild(mkEl("p", "muted no-print", "請至法院家事事件公告查詢是否有拋棄繼承，再於此登錄結果。有人拋棄後，系統會重新計算，並把遞補的繼承人加入清單。再轉繼承人可僅就再轉部分拋棄。"));
   const t = mkEl("table");
   const hr = t.createTHead().insertRow();
@@ -602,7 +648,7 @@ function renouncePanel(fam, result, items, pending) {
     const rec = (p.renounceChecks[it.target] ||= {});
     if (!rec.status) rec.status = "";
     const r = tb.insertRow();
-    r.className = rec.status === "yes" ? "row-renounced" : rec.status === "" ? "row-pending" : "";
+    r.className = rec.status === "yes" ? "row-renounced" : isUnverified(rec.status) ? "row-pending" : "";
     r.insertCell().textContent = `${fp.name}${p.title ? `（${p.title}）` : ""}`;
     r.insertCell().textContent = fp.birth ? roc(fp.birth) : "";
     r.insertCell().textContent = uidShow(p.uid);
@@ -617,7 +663,7 @@ function renouncePanel(fam, result, items, pending) {
     r.insertCell().appendChild(sel);
     for (const [k, ph] of [["court", "例：臺灣臺北地方法院"], ["caseNo", "例：114年度司繼字第123號"], ["checkedOn", "民國 年/月/日"]]) {
       const i = mkEl("input"); i.type = "text"; i.autocomplete = "off"; i.spellcheck = false; i.value = rec[k] || ""; i.placeholder = ph;
-      if (k !== "checkedOn" && rec.status !== "yes") { i.disabled = true; i.placeholder = ""; }
+      if (k !== "checkedOn" && !isRenounceStatus(rec.status)) { i.disabled = true; i.placeholder = ""; }
       i.addEventListener("input", () => { rec[k] = i.value; });
       i.addEventListener("change", schedule);
       r.insertCell().appendChild(i);
@@ -630,6 +676,7 @@ function renounceText(it) {
   const c = checkOf(it), p = byId(it.pid);
   const on = it.target === state.decedent ? "" : `（對${byId(it.target)?.name}之再轉部分）`;
   if (c.status === "yes") return `已拋棄繼承${on}：${[c.court, c.caseNo].filter(Boolean).join(" ") || "法院資料待補"}`;
+  if (c.status === "claimed") return `已聲明拋棄繼承${on}，待核實法院文件`;
   if (c.status === "none") return `查無拋棄繼承${on}（${c.checkedOn || ""}查詢）`;
   return `拋棄繼承尚未查證${on}`;
 }
@@ -682,7 +729,7 @@ function shareTable(fam, result, items) {
   });
   const foot = t.createTFoot().insertRow();
   ["合計", "", "", "", "", total.toString(), pct(total), ""].forEach((v, i) => { const c = foot.insertCell(); c.textContent = v; if (i === 5 || i === 6) c.className = "num"; });
-  if (!Object.keys(final).length) { const r = body.insertRow(), c = r.insertCell(); c.colSpan = 8; c.textContent = "無繼承人（無人承受之遺產，民法第1177條）"; }
+  if (!Object.keys(final).length) { const r = body.insertRow(), c = r.insertCell(); c.colSpan = 8; c.textContent = "目前資料中查無繼承人；確認無人承受（民法第1177條）前，應先完成親屬資料調查"; }
   sec.appendChild(t);
   return sec;
 }
@@ -722,6 +769,7 @@ function formData(fam, result, items, pendingNotes) {
     const note = items.filter(x => x.pid === id).map(it => {
       const c = checkOf(it), on = it.target === did ? "" : `（${fam.p[it.target].name}部分）`;
       return c.status === "yes" ? `拋棄繼承${on}：${[c.court, c.caseNo].filter(Boolean).join(" ") || "法院資料待補"}`
+        : c.status === "claimed" ? `已聲明拋棄${on}，待核實`
         : c.status === "" || !c.status ? `拋棄繼承未查證${on}` : "";
     }).filter(Boolean).join("；");
     return { no: i + 1, title: p.title, name: p.name, uid: uidShow(p.uid), birth: isoToRoc(p.birth), death: isoToRoc(p.death), status, share, note, kind };
@@ -735,7 +783,8 @@ function formData(fam, result, items, pendingNotes) {
       ...(pendingNotes.length ? [`※ ${pendingNotes.join("、")}，本表尚非最終結果。`] : []),
       `應繼分合計：${total}。`,
       `適用規定：${rules}。`,
-      "本表由離線系統依現行民法自動產生，應與戶籍資料逐一核對後使用。",
+      ...result.pendingAll.map(p => `※ 待確認：${p.text}。`),
+      `本表由離線系統依${RULE_VERSION}自動產生，應與戶籍資料逐一核對後使用。`,
     ],
   };
 }
@@ -774,12 +823,7 @@ function formSheet(d) {
 function exportXlsx() {
   if (!state.last) return;
   const { fam, result, items } = state.last;
-  const pend = [];
-  const follow = followUps(fam, result, state.queried).filter(f => f.level === "必要").length;
-  const unchecked = items.filter(x => !checkOf(x).status).length;
-  if (follow) pend.push(`尚有 ${follow} 項資料待調閱`);
-  if (unchecked) pend.push(`${unchecked} 人未查證拋棄繼承`);
-  const d = formData(fam, result, items, pend);
+  const d = formData(fam, result, items, caseNotes(fam, result, items));
   const S = (v, s) => ({ v: v === undefined || v === null ? "" : String(v), s });
   const rows = [
     [S("繼承系統表", 1)],
@@ -853,6 +897,8 @@ function init() {
     const dec = byId(state.decedent);
     download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), safeName("繼承系統表", "svg"));
   });
+  const ft = document.querySelector("footer.note");
+  if (ft) ft.textContent = `${RULE_VERSION}。本工具依民法自動判斷，結果僅供參考，正式文件請以承辦人核對為準。`;
   window.addEventListener("beforeunload", e => { if (hasData()) { e.preventDefault(); e.returnValue = ""; } });
   // 離開或重新整理頁面時主動清空記憶體中的資料（含瀏覽器「上一頁」快取）
   const wipe = () => { resetCase(); state.last = null; showMessages([]); renderTable(); $("#report-body").replaceChildren(); };
