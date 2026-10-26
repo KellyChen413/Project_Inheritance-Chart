@@ -1,7 +1,6 @@
 /* ============================================================
  * 介面：資料輸入、戶籍資料匯入、檢查、產生系統表、拋棄查證、列印
- * 個人資料只存在記憶體，不寫入瀏覽器儲存空間。
- * （僅「欄位對應設定」會記在瀏覽器中，內容只有欄位名稱，不含個人資料）
+ * 所有資料（含欄位對應設定）只存在記憶體，不使用 localStorage、sessionStorage、IndexedDB 或 Cookie。
  * ============================================================ */
 "use strict";
 
@@ -122,8 +121,10 @@ function showMessages(blocks) {
 
 /* ---------- 匯入 ---------- */
 const MAP_KEY = headers => "inh-map:" + headers.map(h => h.trim()).join("|");
-function loadRemembered(headers) { try { return JSON.parse(localStorage.getItem(MAP_KEY(headers)) || "null"); } catch { return null; } }
-function remember(headers, v) { try { localStorage.setItem(MAP_KEY(headers), JSON.stringify(v)); } catch { /* 無法儲存時略過 */ } }
+// 欄位對應設定只記在記憶體（本次開啟期間有效），不使用任何瀏覽器儲存空間
+const mappingMemory = new Map();
+function loadRemembered(headers) { return mappingMemory.get(MAP_KEY(headers)) || null; }
+function remember(headers, v) { mappingMemory.set(MAP_KEY(headers), v); }
 
 function readBytes(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
@@ -344,7 +345,7 @@ function renderTable() {
 
     const text = (field, ph, cls) => {
       const i = document.createElement("input");
-      i.type = "text"; i.value = p[field] || ""; i.placeholder = ph; if (cls) i.className = cls;
+      i.type = "text"; i.autocomplete = "off"; i.spellcheck = false; i.value = p[field] || ""; i.placeholder = ph; if (cls) i.className = cls;
       let hint = null;
       i.addEventListener("input", () => {
         p[field] = i.value;
@@ -610,7 +611,7 @@ function renouncePanel(fam, result, items, pending) {
     });
     r.insertCell().appendChild(sel);
     for (const [k, ph] of [["court", "例：臺灣臺北地方法院"], ["caseNo", "例：114年度司繼字第123號"], ["checkedOn", "民國 年/月/日"]]) {
-      const i = mkEl("input"); i.type = "text"; i.value = rec[k] || ""; i.placeholder = ph;
+      const i = mkEl("input"); i.type = "text"; i.autocomplete = "off"; i.spellcheck = false; i.value = rec[k] || ""; i.placeholder = ph;
       if (k !== "checkedOn" && rec.status !== "yes") { i.disabled = true; i.placeholder = ""; }
       i.addEventListener("input", () => { rec[k] = i.value; });
       i.addEventListener("change", schedule);

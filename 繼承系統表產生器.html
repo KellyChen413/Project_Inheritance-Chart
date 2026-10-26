@@ -409,7 +409,7 @@ footer.note {
     <ul>
       <li>本檔案為單一 HTML 檔，用 Edge 或 Chrome 直接開啟即可使用，不需安裝任何軟體，也不需要網路。</li>
       <li>檔案內設有安全政策，瀏覽器會封鎖任何對外連線；程式碼為純文字，可由資訊單位直接檢視。</li>
-      <li>輸入的資料只存在本頁面的記憶體中，不會寫入硬碟或瀏覽器儲存空間，關閉分頁即清除。若需保存，請按「匯出案件檔」並依單位規定保管。唯一會記在瀏覽器的是「欄位對應設定」（只有欄位名稱，不含個人資料），下次匯入同樣格式的檔案時自動套用。</li>
+      <li>輸入的資料只存在本頁面的記憶體中，不會寫入硬碟或瀏覽器儲存空間，關閉分頁即清除。若需保存，請按「匯出案件檔」並依單位規定保管。全程不使用 localStorage、sessionStorage、IndexedDB 或 Cookie；欄位對應設定也只在本次開啟期間記住。</li>
       <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 CSV，可一次選多份。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；親屬關係依「稱謂（相對於本人）」與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
       <li><b>PDF 匯入：</b>可直接匯入戶政系統匯出的文字型 PDF（能用滑鼠選取文字者）。系統依文字位置還原表格，支援跨頁與儲存格換行；也能讀取「姓名：○○」這類表單格式。匯入前請在對應視窗核對預覽內容。掃描影像 PDF 沒有文字層，無法讀取。PDF 讀取元件（pdf.js）與中文字碼表已內嵌於本檔，不需連網。</li>
       <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
@@ -2013,8 +2013,7 @@ async function pdfReadTable(data, opts = {}) {
 
 /* ============================================================
  * 介面：資料輸入、戶籍資料匯入、檢查、產生系統表、拋棄查證、列印
- * 個人資料只存在記憶體，不寫入瀏覽器儲存空間。
- * （僅「欄位對應設定」會記在瀏覽器中，內容只有欄位名稱，不含個人資料）
+ * 所有資料（含欄位對應設定）只存在記憶體，不使用 localStorage、sessionStorage、IndexedDB 或 Cookie。
  * ============================================================ */
 "use strict";
 
@@ -2135,8 +2134,10 @@ function showMessages(blocks) {
 
 /* ---------- 匯入 ---------- */
 const MAP_KEY = headers => "inh-map:" + headers.map(h => h.trim()).join("|");
-function loadRemembered(headers) { try { return JSON.parse(localStorage.getItem(MAP_KEY(headers)) || "null"); } catch { return null; } }
-function remember(headers, v) { try { localStorage.setItem(MAP_KEY(headers), JSON.stringify(v)); } catch { /* 無法儲存時略過 */ } }
+// 欄位對應設定只記在記憶體（本次開啟期間有效），不使用任何瀏覽器儲存空間
+const mappingMemory = new Map();
+function loadRemembered(headers) { return mappingMemory.get(MAP_KEY(headers)) || null; }
+function remember(headers, v) { mappingMemory.set(MAP_KEY(headers), v); }
 
 function readBytes(file) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(file); });
@@ -2357,7 +2358,7 @@ function renderTable() {
 
     const text = (field, ph, cls) => {
       const i = document.createElement("input");
-      i.type = "text"; i.value = p[field] || ""; i.placeholder = ph; if (cls) i.className = cls;
+      i.type = "text"; i.autocomplete = "off"; i.spellcheck = false; i.value = p[field] || ""; i.placeholder = ph; if (cls) i.className = cls;
       let hint = null;
       i.addEventListener("input", () => {
         p[field] = i.value;
@@ -2623,7 +2624,7 @@ function renouncePanel(fam, result, items, pending) {
     });
     r.insertCell().appendChild(sel);
     for (const [k, ph] of [["court", "例：臺灣臺北地方法院"], ["caseNo", "例：114年度司繼字第123號"], ["checkedOn", "民國 年/月/日"]]) {
-      const i = mkEl("input"); i.type = "text"; i.value = rec[k] || ""; i.placeholder = ph;
+      const i = mkEl("input"); i.type = "text"; i.autocomplete = "off"; i.spellcheck = false; i.value = rec[k] || ""; i.placeholder = ph;
       if (k !== "checkedOn" && rec.status !== "yes") { i.disabled = true; i.placeholder = ""; }
       i.addEventListener("input", () => { rec[k] = i.value; });
       i.addEventListener("change", schedule);
