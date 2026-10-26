@@ -60,6 +60,21 @@
 
 測試：`node web/test_hhr.js`
 
+### PDF 匯入（網頁版）
+
+戶政系統匯出的資料若為 PDF，可直接匯入「文字型 PDF」（能用滑鼠選取文字者）：
+
+- 依文字座標還原表格的列與欄；支援跨頁重複表頭、儲存格換行，自動略過標題、查詢條件與頁碼
+- 也能讀取「姓名：○○　統一編號：○○」這類表單格式（一份 PDF 一人）
+- 還原後進入同一個欄位對應視窗，請核對預覽內容與 PDF 一致後再匯入
+- 掃描影像 PDF 沒有文字層，系統會明確提示，不會硬猜（需 OCR，尚未支援）
+- 讀取元件為 [pdf.js](https://github.com/mozilla/pdf.js) 3.11.174（Apache-2.0，授權見 `web/vendor/pdfjs-LICENSE.txt`），以主執行緒模式執行；繁體中文字碼表（Adobe-CNS1、Big5、UniCNS 等，約 270 KB）內嵌於頁面，**不需連網**，即使 PDF 使用未內嵌的中文字型也能正確讀出
+- 若 PDF 使用未內建的字碼表（例如簡體中文編碼），會提示改用 CSV
+
+範例（虛構）：`data/pdf/`。範例1 使用不內嵌的繁中字型、2 頁且有一格換行；範例2 由 LibreOffice 轉出（內嵌字型）；範例3 為表單格式；範例4 為掃描影像。產生方式見 `tools/make_sample_pdfs.py`。
+
+測試：`npm install pdfjs-dist@3.11.174` 後執行 `node web/test_pdf.js <安裝資料夾> data/pdf`
+
 ### CSV 匯入／匯出（網頁版）
 
 範本：`data/繼承資料範本.csv`（或在網頁按「下載 CSV 範本」）

@@ -116,7 +116,10 @@ async function importFiles(fileList) {
   const blocks = [];
   for (const f of fileList) {
     try {
-      const { text, encoding } = decodeBytes(await readBytes(f));
+      const buf = await readBytes(f);
+      const head = String.fromCharCode(...new Uint8Array(buf.slice(0, 5)));
+      if (/\.pdf$/i.test(f.name) || head === "%PDF-") { blocks.push(await importPdf(f.name, buf, false)); continue; }
+      const { text, encoding } = decodeBytes(buf);
       blocks.push(await importOne(f.name, text, encoding, false));
     } catch (err) { blocks.push({ cls: "error", title: `${f.name}：無法讀取`, items: [err.message] }); }
   }
@@ -130,12 +133,29 @@ async function importOne(name, text, encoding, auto) {
     loadData(JSON.parse(text));
     return { cls: "ok", title: `${name}：已載入案件檔，共 ${state.persons.length} 人` };
   }
-  const table = hhrReadTable(text);
+  return importTable(name, hhrReadTable(text), `${encoding} 編碼`, auto, [], text);
+}
+
+/* PDF：先還原成表格，再走同一套對應與匯入流程 */
+async function importPdf(name, buf, auto) {
+  let table;
+  try { table = await pdfReadTable(buf); }
+  catch (e) { return { cls: "error", title: `${name}：無法讀取 PDF`, items: [e.message, "PDF 若有密碼保護或已損毀，請重新匯出。"] }; }
+  if (table.meta.scanned) return { cls: "error", title: `${name}：這是掃描影像 PDF，沒有可讀取的文字`,
+    items: ["請改用戶政系統匯出的 CSV，或文字型 PDF（可用滑鼠選取文字的 PDF）。掃描檔需經 OCR 辨識，目前尚未支援。"] };
+  if (!table.body.length) return { cls: "error", title: `${name}：PDF 中讀不到人員資料`, items: table.meta.notes };
+  const how = table.meta.mode === "form" ? "表單格式" : "表格格式";
+  return importTable(name, table, `PDF ${table.meta.pages} 頁・${how}`, auto, table.meta.notes, null);
+}
+
+async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
+  const isPdf = text === null;
   let kind = hhrGuessKind(table.headers), mapping = hhrGuessMapping(table.headers);
   const mem = loadRemembered(table.headers);
   if (mem) ({ kind, mapping } = mem);
+  if (isPdf && kind === "simple") kind = "personal";
   if (!auto) {
-    const r = await openMapDialog(name, encoding, table, kind, mapping);
+    const r = await openMapDialog(name, sourceLabel, table, kind, mapping, !isPdf);
     if (!r) return { cls: "warn", title: `${name}：已取消匯入` };
     ({ kind, mapping } = r);
     remember(table.headers, { kind, mapping });
@@ -146,7 +166,7 @@ async function importOne(name, text, encoding, auto) {
     const { data, errors, warnings } = importCsv(text);
     if (errors.length) return { cls: "error", title: `${name}：無法匯入，有 ${errors.length} 項問題需先修正`, items: [...errors, ...warnings] };
     loadData(data);
-    return { cls: warnings.length ? "warn" : "ok", title: `${name}：已匯入 ${data.persons.length} 人（${encoding}）`, items: warnings };
+    return { cls: warnings.length ? "warn" : "ok", title: `${name}：已匯入 ${data.persons.length} 人（${sourceLabel}）`, items: warnings };
   }
 
   const parsed = hhrParse(table, mapping, kind);
@@ -162,13 +182,13 @@ async function importOne(name, text, encoding, auto) {
     if (!state.decedent) state.decedent = a.id;
   }
   const link = hhrLink(state.persons, state.files);
-  const items = [...parsed.warnings, ...m.conflicts, ...link.warnings];
+  const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
-    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（本人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${encoding}）` };
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（本人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
 }
 
 /* 欄位對應視窗 */
-function openMapDialog(name, encoding, table, kind0, mapping0) {
+function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = true) {
   return new Promise(resolve => {
     const dlg = $("#map-dialog");
     dlg.replaceChildren();
@@ -176,10 +196,10 @@ function openMapDialog(name, encoding, table, kind0, mapping0) {
     const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
     dlg.appendChild(mk("h3", "", `匯入：${name}`));
-    dlg.appendChild(mk("p", "muted", `${encoding} 編碼・${table.body.length} 列資料・偵測到 ${table.headers.length} 個欄位。請確認檔案種類與欄位對應。`));
+    dlg.appendChild(mk("p", "muted", `${sourceLabel}・${table.body.length} 列資料・偵測到 ${table.headers.length} 個欄位。請確認檔案種類與欄位對應${allowSimple ? "" : "，並核對預覽內容與 PDF 是否一致"}。`));
 
     const kindRow = mk("div", "kind-row");
-    for (const k of ["kin", "personal", "simple"]) {
+    for (const k of allowSimple ? ["kin", "personal", "simple"] : ["kin", "personal"]) {
       const lab = mk("label");
       const r = mk("input"); r.type = "radio"; r.name = "kind"; r.value = k; r.checked = k === kind;
       r.addEventListener("change", () => { kind = k; render(); });
