@@ -4,7 +4,7 @@
 "use strict";
 
 const SVGNS = "http://www.w3.org/2000/svg";
-const NODE_W = 178, NODE_H = 108, SP_GAP = 40, SIB_GAP = 26, ROW_H = 176, MARGIN = 36, TOP = 128;
+const NODE_W = 178, NODE_H = 108, SP_GAP = 40, SIB_GAP = 26, ROW_H = 176, MARGIN = 36, TOP = 172;   // 頂部預留標題、圖例與待確認提示（最多兩行）
 const KIND = {
   decedent: { fill: "#FBE3E1", stroke: "#B3261E", label: "被繼承人" },
   heir:     { fill: "#E3F2E6", stroke: "#1E6B34", label: "繼承人" },
@@ -30,6 +30,7 @@ function classify(fam, result) {
       original[s.id] ??= s.share;
       if (!res.retransfers[s.id] && !info[s.id]) {
         info[s.id] = { kind: "heir", lines: [fromName ? `再轉繼承（自${fromName}）` : s.short, `應繼分 ${final[s.id]}`] };
+        if (fam.p[s.id].fetus === "pending") info[s.id].lines.splice(1, 0, "胎兒・保留應繼分（待出生）");
       }
     }
     for (const [pid, sub] of Object.entries(res.retransfers)) walk(sub, fam.p[pid].name);
@@ -152,7 +153,14 @@ function drawChart(fam, result, opts = {}) {
   svg.appendChild(el("text", { x: W / 2, y: 72, "text-anchor": "middle", "font-size": 15, fill: "#333" },
     `被繼承人：${dec.name}（${roc(result.openedOn)}死亡）　繼承順序：${result.order}`));
 
-  if (opts.note) svg.appendChild(el("text", { x: MARGIN, y: 100, "font-size": 13, "font-weight": 700, fill: "#B3261E" }, opts.note));
+  // 待確認提示：放在圖例下方，過長時自動換行，不與圖例重疊
+  if (opts.note) {
+    const per = Math.max(20, Math.floor((W - MARGIN * 2) / 13.5));
+    const chars = [...opts.note];
+    for (let i = 0, ln = 0; i < chars.length; i += per, ln++) {
+      svg.appendChild(el("text", { x: MARGIN, y: 124 + ln * 18, "font-size": 13, "font-weight": 700, fill: "#B3261E" }, chars.slice(i, i + per).join("")));
+    }
+  }
 
   // 圖例
   const legendW = k => 30 + [...KIND[k].label].length * 12.5 + 18;

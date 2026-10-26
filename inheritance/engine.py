@@ -77,7 +77,11 @@ def _d(value):
 
 class Family:
     def __init__(self, persons: list[Person]):
-        self.p = {x.id: x for x in persons}
+        self.p = {}
+        for x in persons:
+            if x.id in self.p:
+                raise ValueError(f"人員 ID 重複：{x.id}，請先修正")
+            self.p[x.id] = x
         for x in persons:  # 配偶關係雙向補齊
             if x.spouse and x.spouse in self.p and not self.p[x.spouse].spouse:
                 self.p[x.spouse].spouse = x.id
@@ -112,10 +116,11 @@ class Family:
                 if x.id != pid and mine & {x.father, x.mother} - {None}]
 
     def grandparents(self, pid):
-        out = []
+        out = {}                                   # 以 ID 去重：同一位祖父母可能經父、母兩個分支被找到
         for par in self.parents(pid):
-            out.extend(self.parents(par.id))
-        return out
+            for g in self.parents(par.id):
+                out[g.id] = g
+        return list(out.values())
 
 
 # ---------- 規則引擎 ----------
