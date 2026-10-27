@@ -32,6 +32,21 @@ const ONE = new Frac(1), ZERO = new Frac(0);
 /* 規則版本：離線工具長期使用時，用來確認適用的規則是否需要更新 */
 const RULE_VERSION = "現行民法繼承編（規則版本 2026.10.27）";
 
+/* 適用法律的時點檢查：本系統只實作現行民法
+ * - 民國34年10月25日前開始之繼承：依日據時期臺灣之習慣（如戶主繼承），本系統不計算
+ * - 民國74年6月5日民法繼承編修正施行前開始之繼承：部分規定不同（如養子女應繼分），提醒人工確認
+ */
+const REGIME_JAPANESE_END = "1945-10-25";
+const REGIME_1985 = "1985-06-05";
+function legalRegime(deathIso) {
+  if (!deathIso) return { code: "unknown" };
+  if (deathIso < REGIME_JAPANESE_END) return { code: "japanese", block: true,
+    text: "繼承開始於民國34年10月25日前（日據時期），應依當時臺灣之習慣判斷繼承人（例如戶主繼承、家產繼承），與現行民法不同。本系統不計算應繼分，請人工判斷。" };
+  if (deathIso < REGIME_1985) return { code: "pre1985",
+    text: "繼承開始於民國74年6月5日民法繼承編修正施行前，部分規定與現行法不同（例如當時養子女之應繼分為婚生子女之二分之一）。若案件涉及收養等情形，請人工確認；本系統依現行法計算。" };
+  return { code: "current" };
+}
+
 /* ---------- 日期 ---------- */
 // 接受西元 2025-03-10 / 2025/3/10，或民國 114/3/10、114.3.10、114-3-10
 function parseDate(s) {
@@ -544,4 +559,4 @@ function validate(persons, decedentId) {
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE };
+if (typeof module !== "undefined") module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime };

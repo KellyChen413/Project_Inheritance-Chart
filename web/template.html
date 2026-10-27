@@ -308,12 +308,30 @@ table#people { border-collapse: separate; border-spacing: 0; width: 100%; min-wi
 .fs-sign span:first-child { border-bottom: none; }
 
 /* ---------- 對話框 ---------- */
-dialog#map-dialog, dialog#confirm-dialog {
+dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog {
   border: 1px solid var(--line-2); border-radius: 20px; padding: 28px 32px;
   width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto;
   background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg);
 }
 dialog#confirm-dialog { width: min(440px, calc(100vw - 32px)); }
+dialog#tx-dialog { width: min(1000px, calc(100vw - 32px)); }
+.tx-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-bottom: 14px; }
+.tx-person { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 12px; background: var(--surface-2); }
+.tx-person.head { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.tx-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 600; font-size: 13.5px; }
+.tx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 8px 10px; }
+.tx-grid label, .tx-meta label, .tx-memo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.tx-grid input, .tx-meta input, .tx-memo textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 7px 9px; min-width: 0;
+}
+.tx-grid input:focus, .tx-meta input:focus, .tx-memo textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.tx-memo { margin-top: 10px; }
+.tx-memo textarea { min-height: 54px; resize: vertical; width: 100%; box-sizing: border-box; }
+.tx-parsed { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12.5px; min-height: 4px; }
+.tx-parsed span { padding: 2px 10px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.tx-parsed span.warn { background: var(--warn-soft); color: var(--warn); }
+.tx-parsed span.muted { background: transparent; color: var(--muted); padding-left: 0; }
 dialog::backdrop { background: rgb(18 20 24 / .5); backdrop-filter: blur(3px); }
 dialog[open] { animation: dlg-in .22s var(--ease); }
 @keyframes dlg-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -362,7 +380,7 @@ footer.note {
   .followups .txt { flex-basis: calc(100% - 70px); }
   .form-sheet { padding: 20px 14px; border-radius: var(--r-sm); }
   .fs-title { font-size: 21px; letter-spacing: .25em; }
-  dialog#map-dialog, dialog#confirm-dialog { padding: 20px 18px; border-radius: 16px; }
+  dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog { padding: 20px 18px; border-radius: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -425,6 +443,8 @@ footer.note {
       <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
       <li><b>拋棄繼承查證：</b>系統表下方列出需查證的人，至法院家事事件公告查詢後登錄結果、法院與案號。查證結果分為「查無拋棄」「已聲明拋棄（待核實）」「已拋棄（已核實）」；已聲明者先納入計算，但標示待核實文件。尚未查證完成前，系統表會標示「尚非最終結果」。</li>
       <li>日期可輸入民國（例：114/3/10）或西元（例：2025-03-10）。</li>
+      <li><b>謄本輸入（紙本戶籍謄本）：</b>按「謄本輸入」，一份謄本輸入一次。稱謂填「與戶長的關係」，戶長本人填「戶長」。記事欄照抄或貼上即可，系統會自動抓出<b>死亡</b>（含死亡宣告的推定死亡日）、<b>更名</b>（原名列入父母姓名比對）、<b>結婚、離婚</b>，下方即時顯示解析結果；收養、多次婚姻或看不懂的記事會提醒人工確認。謄本的資料與戶役政匯入的資料以統一編號合併、互相補足。謄本不等於二親等資料，戶長不會被當成「已調閱」。</li>
+      <li><b>適用法律時點：</b>本系統只實作現行民法。被繼承人於<b>民國34年10月25日前</b>（日據時期）死亡者，繼承依當時臺灣習慣判斷，系統不產生應繼分；<b>民國74年6月5日</b>民法繼承編修正施行前開始的繼承，會提醒部分規定不同（例如養子女應繼分），請人工確認。這類舊案多半只有手抄或日據時期謄本，仍可用「謄本輸入」建檔。</li>
       <li><b>Excel 匯入：</b>直接選擇戶役政匯出的 .xlsx 或 .xls，不必先另存為 CSV。系統讀取第一張工作表，表頭上方的標題列會自動略過。Excel 把 0370512 顯示成 370512（前面的 0 被去掉）也能正確辨識；儲存格若是 Excel 日期格式，會自動換算。讀取全程在瀏覽器內完成，不使用任何外掛或網路。有密碼保護的檔案請先移除密碼。</li>
       <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
@@ -448,6 +468,7 @@ footer.note {
       <label class="inline">被繼承人 <select id="decedent"></select></label>
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn-import" title="戶籍資料 Excel、PDF 或 CSV（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
+      <button type="button" id="btn-transcript" title="依紙本戶籍謄本（新式電腦列印）逐人輸入，記事欄自動解析">謄本輸入</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
       <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
@@ -487,6 +508,7 @@ footer.note {
 <footer class="note">本工具依現行民法自動判斷，結果僅供參考，正式文件請以承辦人核對為準。</footer>
 
 <dialog id="map-dialog"></dialog>
+<dialog id="tx-dialog"></dialog>
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">/*SAMPLE*/</script>
 <script type="application/json" id="sample-3gen">/*SAMPLE3*/</script>

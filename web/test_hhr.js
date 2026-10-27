@@ -161,6 +161,57 @@ const cases = {
     assert.deepStrictEqual(Object.keys(m).sort(), ["birth", "name", "relation", "uid"]);
     assert.strictEqual(hhrGuessKind(t.headers), "kin");
   },
+  "記事解析：死亡、更名、結婚、離婚、死亡宣告、收養": () => {
+    const { parseMemo } = require("./hhr.js");
+    const a = parseMemo("民國109年06月01日死亡　民國109年06月05日申請登記");
+    assert.strictEqual(a.death, "109/6/1");
+    assert.deepStrictEqual(parseMemo("民國090年03月15日更改姓名　原名：王淑華").oldNames, ["王淑華"]);
+    const b = parseMemo("民國098年05月20日與張建國結婚 民國105年01月10日與張建國兩願離婚");
+    assert.deepStrictEqual([b.marriages[0].name, b.divorces[0].name, b.divorces[0].date], ["張建國", "張建國", "105/1/10"]);
+    const c = parseMemo("民國085年02月02日死亡宣告 推定死亡日期民國084年12月31日");
+    assert.ok(c.deathDeclared); assert.strictEqual(c.death, "84/12/31");
+    assert.strictEqual(parseMemo("民國060年5月1日父王福來死亡").death, "");     // 不是本人死亡
+    assert.strictEqual(parseMemo("民國１００年２月３日於臺北市死亡").death, "100/2/3");  // 全形數字
+    assert.ok(parseMemo("民國100年1月1日被王大明收養").adoption);
+  },
+  "謄本匯入：稱謂相對戶長、記事補死亡與離婚、與二親等資料合併": () => {
+    const c = newCase();
+    importFile(c, "範例1_王大明_二親等資料.csv");
+    const t = hhrReadTable(["稱謂,姓名,統一編號,出生日期,父姓名,母姓名,配偶姓名,記事",
+      "戶長,王志偉,A000000011,0640630,王大明,林美華,黃雅婷,民國109年06月01日死亡　民國109年06月05日申請登記",
+      "妻,黃雅婷,A000000030,0660101,黃一,陳二,王志偉,民國088年03月01日與王志偉結婚",
+      "長男,王小安,A000000020,0900808,王志偉,黃雅婷,,",
+      "長女,王小平,A000000021,0931201,王志偉,黃雅婷,,"].join("\n"));
+    assert.strictEqual(hhrGuessKind(t.headers), "household");
+    const parsed = hhrParse(t, hhrGuessMapping(t.headers), "household");
+    assert.deepStrictEqual(parsed.errors, []);
+    assert.strictEqual(parsed.anchorUid, "A000000011");
+    const m = hhrMerge(c.persons, parsed, "謄本", () => `N${c.seq++}`);
+    assert.deepStrictEqual(m.conflicts, []);                                  // 王志偉死亡日期與二親等一致
+    c.files.push({ name: "謄本", kind: "household", anchor: parsed.anchorUid, rels: parsed.records.map(r => ({ uid: r.uid, relation: r.relation })) });
+    hhrLink(c.persons, c.files);
+    assert.strictEqual(byName(c, "王小平").father, byName(c, "王志偉").id);
+    assert.strictEqual(byName(c, "黃雅婷").spouse, byName(c, "王志偉").id);
+    assert.ok(!c.queried.has(byName(c, "王志偉").id));                       // 謄本不算已調閱二親等
+    assert.strictEqual(compute(c).shares["王小平"], "1/10");
+  },
+  "謄本記事離婚 → 前配偶不繼承": () => {
+    const t = hhrReadTable(["稱謂,姓名,統一編號,出生日期,配偶姓名,記事",
+      "戶長,李甲男,A000000101,0500101,陳乙女,民國070年1月1日與陳乙女結婚 民國100年1月1日與陳乙女兩願離婚 民國110年1月1日死亡",
+      "長男,李丙男,A000000103,0720101,,"].join("\n"));
+    const parsed = hhrParse(t, hhrGuessMapping(t.headers), "household");
+    const rec = parsed.records[0];
+    assert.deepStrictEqual([rec.death, rec.marriageEnd, rec.spouseName], ["110/1/1", "100/1/1", "陳乙女"]);
+    assert.ok(parsed.warnings.some(w => w.includes("離婚")));
+  },
+  "適用法律時點：日據時期不計算、74年修法前提醒": () => {
+    const { legalRegime } = require("./engine.js");
+    assert.strictEqual(legalRegime("1945-10-24").code, "japanese");
+    assert.ok(legalRegime("1945-10-24").block);
+    assert.strictEqual(legalRegime("1945-10-25").code, "pre1985");
+    assert.strictEqual(legalRegime("1985-06-04").code, "pre1985");
+    assert.strictEqual(legalRegime("1985-06-05").code, "current");
+  },
   "缺少自己／本人列 → 擋下": () => {
     const t = hhrReadTable("稱謂,姓名,統一編號\n父,甲,A000000001");
     assert.ok(hhrParse(t, hhrGuessMapping(t.headers), "kin").errors.some(e => e.includes("自己")));
