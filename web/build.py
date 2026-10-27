@@ -22,6 +22,7 @@ html = (html.replace("/*SAMPLE*/", json.dumps(sample, ensure_ascii=False).replac
                      (here / "hhr.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports', "// module.exports") + "\n" +
                      (here / "casework.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports', "// module.exports") + "\n" +
                      (here / "xlsx.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports', "// module.exports") + "\n" +
+                     (here / "excel.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports', "// module.exports") + "\n" +
                      (here / "pdfread.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports', "// module.exports"))
             .replace("/*APP*/", (here / "app.js").read_text(encoding="utf-8")))
 

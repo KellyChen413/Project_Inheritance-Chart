@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 安全政策：禁止載入或連線到任何外部位址；以雜湊值只允許本檔案內既有的程式與樣式執行（由 web/build.py 產生時自動計算） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-JPndUMwEus8cF48abAXCFNA83fWl8ZeSt/oZ/NkJhxU='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-uBLgVhGVTxTje//QkMppFcVd1PKCGGpg2yGlPBLszjo='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>繼承系統表產生器</title>
@@ -423,11 +423,13 @@ footer.note {
       <li>本檔案為單一 HTML 檔，用 Edge 或 Chrome 直接開啟即可使用，不需安裝任何軟體，也不需要網路。</li>
       <li>檔案內設有安全政策，瀏覽器會封鎖任何對外連線；程式碼為純文字，可由資訊單位直接檢視。安全政策以「雜湊值」只允許本檔案內既有的程式與樣式執行，檔案若遭竄改或被插入其他程式碼，瀏覽器會拒絕執行。</li>
       <li>輸入的資料只存在本頁面的記憶體中，不會寫入硬碟或瀏覽器儲存空間，關閉分頁即清除。若需保存，請按「匯出案件檔」並依單位規定保管。全程不使用 localStorage、sessionStorage、IndexedDB 或 Cookie；欄位對應設定也只在本次開啟期間記住。</li>
-      <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 CSV，可一次選多份。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；親屬關係依「稱謂（相對於本人）」與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
+      <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 <b>Excel（.xlsx／.xls）、PDF 或 CSV</b>，可一次選多份、混合不同格式。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；被查詢人的稱謂為「自己」（也接受「本人」），日期可為 0370512 這類民國 7 碼；親屬關係依「稱謂（相對於被查詢人）」、父母配偶統號與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
       <li><b>PDF 匯入：</b>可直接匯入戶政系統匯出的文字型 PDF（能用滑鼠選取文字者）。系統依文字位置還原表格，支援跨頁與儲存格換行；也能讀取「姓名：○○」這類表單格式。匯入前請在對應視窗核對預覽內容。掃描影像 PDF 沒有文字層，無法讀取。PDF 讀取元件（pdf.js）與中文字碼表已內嵌於本檔，不需連網。</li>
       <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
       <li><b>拋棄繼承查證：</b>系統表下方列出需查證的人，至法院家事事件公告查詢後登錄結果、法院與案號。查證結果分為「查無拋棄」「已聲明拋棄（待核實）」「已拋棄（已核實）」；已聲明者先納入計算，但標示待核實文件。尚未查證完成前，系統表會標示「尚非最終結果」。</li>
       <li>日期可輸入民國（例：114/3/10）或西元（例：2025-03-10）。</li>
+      <li><b>Excel 匯入：</b>直接選擇戶役政匯出的 .xlsx 或 .xls，不必先另存為 CSV。系統讀取第一張工作表，表頭上方的標題列會自動略過。Excel 把 0370512 顯示成 370512（前面的 0 被去掉）也能正確辨識；儲存格若是 Excel 日期格式，會自動換算。讀取全程在瀏覽器內完成，不使用任何外掛或網路。有密碼保護的檔案請先移除密碼。</li>
+      <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
       <li><b>Excel 日期注意：</b>在 Excel 輸入「37/5/12」這類兩位數民國年，會被自動改成西元 1937 年。民國 100 年以前的日期請寫成「民國37年5月12日」或西元「1948/5/12」，或先將日期欄設為文字格式。</li>
       <li>「喪失」欄是指對目前選定之被繼承人喪失繼承權（第1145條）。拋棄繼承請在「拋棄繼承查證」登錄，含再轉部分的拋棄。</li>
@@ -448,7 +450,7 @@ footer.note {
     <div class="toolbar">
       <label class="inline">被繼承人 <select id="decedent"></select></label>
       <span class="spacer"></span>
-      <button type="button" class="primary" id="btn-import" title="戶籍資料 CSV 或 PDF（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
+      <button type="button" class="primary" id="btn-import" title="戶籍資料 Excel、PDF 或 CSV（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
       <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
@@ -456,7 +458,7 @@ footer.note {
       <button type="button" id="btn-export-csv" title="匯出為 CSV，可用 Excel 開啟">匯出 CSV</button>
       <button type="button" id="btn-export" title="匯出完整案件檔，含匯入紀錄與拋棄查證">匯出案件檔</button>
       <button type="button" class="danger" id="btn-clear">清除全部</button>
-      <input type="file" id="file" accept=".csv,.txt,.json,.pdf,text/csv,application/json,application/pdf" multiple hidden>
+      <input type="file" id="file" accept=".csv,.txt,.json,.pdf,.xlsx,.xls,text/csv,application/json,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple hidden>
     </div>
     <div id="import-messages"></div>
     <div id="file-list"></div>
@@ -491,7 +493,7 @@ footer.note {
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">{"_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。", "decedent": "P01", "persons": [{"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10", "father": "P90", "mother": "P91", "spouse": "P02"}, {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"}, {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"}, {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"}, {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"}, {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"}, {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01", "father": "P01", "mother": "P02", "spouse": "P30"}, {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"}, {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"}, {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"}, {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05", "father": "P01", "mother": "P02", "renounced": ["P01"]}, {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"}, {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01", "father": "P01", "mother": "P02", "spouse": "P31"}, {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"}, {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}]}</script>
 <script type="application/json" id="sample-3gen">{"_說明": "三代綜合案例（全部虛構）：代位繼承、再轉繼承、拋棄繼承（含僅拋棄再轉部分）", "decedent": "X", "queried": ["X", "C2", "C3", "C4"], "persons": [{"id": "X", "name": "陳國華", "gender": "M", "birth": "1945-04-02", "death": "2025-03-10", "spouse": "W", "uid": "A000001001"}, {"id": "W", "name": "林秀蘭", "gender": "F", "birth": "1948-06-15", "uid": "A000001002", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C1", "name": "陳志明", "gender": "M", "birth": "1970-01-12", "father": "X", "mother": "W", "uid": "A000001011", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C2", "name": "陳志豪", "gender": "M", "birth": "1973-05-20", "death": "2025-08-01", "father": "X", "mother": "W", "spouse": "C2W", "uid": "A000001012"}, {"id": "C2W", "name": "吳雅芳", "gender": "F", "birth": "1975-02-03", "uid": "A000001021", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G1", "name": "陳柏翰", "gender": "M", "birth": "2000-03-03", "father": "C2", "mother": "C2W", "uid": "A000001031", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G2", "name": "陳思妤", "gender": "F", "birth": "2003-07-07", "father": "C2", "mother": "C2W", "uid": "A000001032", "renounceChecks": {"C2": {"status": "yes", "court": "臺灣新北地方法院", "caseNo": "114年度司繼字第987號", "checkedOn": "114/10/20"}}}, {"id": "C3", "name": "陳美玲", "gender": "F", "birth": "1976-09-09", "death": "2016-04-01", "father": "X", "mother": "W", "spouse": "C3H", "uid": "A000001013"}, {"id": "C3H", "name": "黃建宏", "gender": "M", "birth": "1974-12-24", "uid": "A000001022"}, {"id": "G3", "name": "黃子軒", "gender": "M", "birth": "2001-01-01", "father": "C3H", "mother": "C3", "uid": "A000001033", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "G4", "name": "黃子涵", "gender": "F", "birth": "2004-02-02", "father": "C3H", "mother": "C3", "uid": "A000001034", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C4", "name": "陳美珍", "gender": "F", "birth": "1979-11-11", "father": "X", "mother": "W", "uid": "A000001014", "renounceChecks": {"X": {"status": "yes", "court": "臺灣臺北地方法院", "caseNo": "114年度司繼字第321號", "checkedOn": "114/6/2"}}}, {"id": "G5", "name": "李小美", "gender": "F", "birth": "2008-08-08", "mother": "C4", "uid": "A000001035"}]}</script>
-<script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000001,王大明,本人,037/05/12,114/03/10,059/03/01,A000000002,林美華,,王福來,A000000091,李秀英,,\n2,查看,,王福來,父,009/02/01,079/11/20,,,,,,,,,\n3,查看,A000000091,李秀英,母,015/07/15,,,,王福來,,,,,,\n4,查看,A000000002,林美華,配偶,040/09/03,,059/03/01,A000000001,王大明,,,,,,\n5,查看,A000000092,王大華,弟,042/04/08,,,,,,王福來,A000000091,李秀英,,\n6,查看,A000000010,王志強,長男,061/01/20,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,次男,064/06/30,109/06/01,090/01/01,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,長女,067/10/05,,,,,A000000001,王大明,A000000002,林美華,,原名王淑華，民國90年更名\n9,查看,A000000013,王淑娟,次女,070/02/14,114/08/01,098/05/20,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n10,查看,A000000020,王小安,孫,090/08/08,,,,,A000000011,王志偉,,黃雅婷,,\n11,查看,A000000022,陳小美,外孫女,095/05/17,,,,,,陳文雄,,王淑華,,\n12,查看,A000000023,張小宇,外孫,099/03/03,,,,,A000000031,張建國,A000000013,王淑娟,,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000013,王淑娟,本人,070/02/14,114/08/01,098/05/20,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n2,查看,A000000001,王大明,父,037/05/12,114/03/10,059/03/01,A000000002,林美華,,王福來,A000000091,李秀英,,\n3,查看,A000000002,林美華,母,040/09/03,,059/03/01,A000000001,王大明,,,,,,\n4,查看,A000000031,張建國,配偶,068/09/09,,098/05/20,A000000013,王淑娟,,張老三,,吳美玉,,\n5,查看,A000000023,張小宇,長男,099/03/03,,,,,A000000031,張建國,A000000013,王淑娟,,\n6,查看,A000000010,王志強,兄,061/01/20,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,兄,064/06/30,109/06/01,090/01/01,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,姊,067/10/05,,,,,A000000001,王大明,A000000002,林美華,,原名王淑華，民國90年更名\n9,查看,,王福來,祖父,009/02/01,079/11/20,,,,,,,,,\n10,查看,A000000091,李秀英,祖母,015/07/15,,,,王福來,,,,,,\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
+<script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000001,王大明,自己,0370512,1140310,0590301,A000000002,林美華,,王福來,A000000091,李秀英,,\n2,查看,,王福來,父,0090201,0791120,,,,,,,,,\n3,查看,A000000091,李秀英,母,0150715,,,,王福來,,,,,,\n4,查看,A000000002,林美華,配偶,0400903,,0590301,A000000001,王大明,,,,,,\n5,查看,A000000092,王大華,弟,0420408,,,,,,王福來,A000000091,李秀英,,\n6,查看,A000000010,王志強,長男,0610120,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,次男,0640630,1090601,0900101,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,長女,0671005,,,,,A000000001,王大明,A000000002,林美華,,*\n9,查看,A000000013,王淑娟,次女,0700214,1140801,0980520,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n10,查看,A000000020,王小安,孫,0900808,,,,,A000000011,王志偉,,黃雅婷,,\n11,查看,A000000022,陳小美,外孫女,0950517,,,,,,陳文雄,A000000012,王淑華,,\n12,查看,A000000023,張小宇,外孫,0990303,,,,,A000000031,張建國,A000000013,王淑娟,,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000013,王淑娟,自己,0700214,1140801,0980520,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n2,查看,A000000001,王大明,父,0370512,1140310,0590301,A000000002,林美華,,王福來,A000000091,李秀英,,\n3,查看,A000000002,林美華,母,0400903,,0590301,A000000001,王大明,,,,,,\n4,查看,A000000031,張建國,配偶,0680909,,0980520,A000000013,王淑娟,,張老三,,吳美玉,,\n5,查看,A000000023,張小宇,長男,0990303,,,,,A000000031,張建國,A000000013,王淑娟,,\n6,查看,A000000010,王志強,兄,0610120,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,兄,0640630,1090601,0900101,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,姊,0671005,,,,,A000000001,王大明,A000000002,林美華,,*\n9,查看,,王福來,祖父,0090201,0791120,,,,,,,,,\n10,查看,A000000091,李秀英,祖母,0150715,,,,王福來,,,,,,\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -1573,6 +1575,14 @@ const HHR_FIELDS = [
 /* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
 const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
 
+/* 變更註記的值：空白、「-」「無」視為沒有變更；「*」表示有變更但匯出檔未載明內容 */
+function noteValue(v) {
+  const t = String(v || "").replace(/[\s　]/g, "");
+  if (!t || /^(-|－|—|無|否|N|n|0)$/.test(t)) return "";
+  if (/^[*＊※]+$/.test(t)) return "*";
+  return String(v).trim();
+}
+
 /* 從變更註記中找出舊統號、舊姓名，供合併與父母姓名比對使用 */
 function changeAliases(uidNote, nameNote, uid, name) {
   const uids = [...new Set((String(uidNote || "").toUpperCase().match(/[A-Z][0-9A-Z]\d{8}/g) || []).filter(u => u !== uid))];
@@ -1589,7 +1599,7 @@ const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
 
 /* 稱謂分類（相對於本人） */
 const REL = {
-  self:    /^本人$/,
+  self:    /^(本人|自己|查詢人|當事人)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
   father:  /^(父|父親|養父)$/,
   mother:  /^(母|母親|養母)$/,
   spouse:  /^(配偶|夫|妻|丈夫|妻子|先生|太太)$/,
@@ -1617,12 +1627,16 @@ function maskUid(uid) {
 }
 
 /* ---------- 讀檔 ---------- */
-function hhrReadTable(text) {
-  const rows = hhrCsv(text);
+function hhrReadTable(text) { return hhrTableFromRows(hhrCsv(text)); }
+/* Excel、PDF 等已拆成儲存格的資料：找出表頭列（含「姓名」的那一列），其上方的標題列略過 */
+function hhrTableFromRows(rows) {
+  rows = rows.map(r => r.map(v => String(v ?? "")));
   const names = HHR_FIELDS.find(f => f.key === "name").syn;
   const idx = rows.findIndex(r => r.some(v => names.includes(normHeader(v))));
   if (idx < 0) return { headers: rows[0] || [], body: rows.slice(1), headerRow: 1 };
-  return { headers: rows[idx].map(h => String(h).trim()), body: rows.slice(idx + 1), headerRow: idx + 1 };
+  // 去除完全空白的列（Excel 常有格式殘留的空列）
+  const body = rows.slice(idx + 1).filter(r => r.some(v => v.trim()));
+  return { headers: rows[idx].map(h => String(h).trim()), body, headerRow: idx + 1 };
 }
 
 function hhrGuessMapping(headers) {
@@ -1677,10 +1691,12 @@ function hhrParse(table, mapping, kind) {
     const rec = { line, uid, name, gender, relation, birth: get("birth"), death: get("death"),
       fatherName: get("fatherName"), motherName: get("motherName"), spouseName: get("spouseName"),
       fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")),
-      marriageDate: get("marriageDate"), uidNote: get("uidNote"), nameNote: get("nameNote"), noUid };
+      marriageDate: get("marriageDate"), uidNote: noteValue(get("uidNote")), nameNote: noteValue(get("nameNote")), noUid };
     Object.assign(rec, changeAliases(rec.uidNote, rec.nameNote, uid, name));
-    if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
-    if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
+    if (rec.uidNote === "*") warnings.push(`第 ${line} 列（${name}）統號變更註記為「*」：曾變更統一編號，但匯出檔未載明舊統號；若其他檔案以舊統號記載此人，請人工確認是否為同一人`);
+    else if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
+    if (rec.nameNote === "*") warnings.push(`第 ${line} 列（${name}）姓名變更註記為「*」：曾變更姓名，但匯出檔未載明舊名；子女資料中的父母姓名若對不上，請調閱個人戶籍資料確認舊名`);
+    else if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
     for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
@@ -1690,10 +1706,10 @@ function hhrParse(table, mapping, kind) {
   let anchorUid = null;
   if (kind === "kin") {
     const selves = records.filter(r => REL.self.test(r.relation));
-    if (!selves.length) errors.push("找不到稱謂為「本人」的列，無法判斷其他人與本人的關係");
+    if (!selves.length) errors.push("找不到稱謂為「自己」（或「本人」）的列，無法判斷其他人與被查詢人的關係");
     else {
       anchorUid = selves[0].uid;
-      if (selves.length > 1) warnings.push(`有 ${selves.length} 列稱謂為「本人」，以第一列（${selves[0].name}）為本人`);
+      if (selves.length > 1) warnings.push(`有 ${selves.length} 列稱謂為「自己」／「本人」，以第一列（${selves[0].name}）為本人`);
     }
     const unknown = [...new Set(records.map(r => r.relation).filter(r => r && !Object.values(REL).some(re => re.test(r))))];
     if (unknown.length) warnings.push(`以下稱謂改依父母姓名判斷關係：${unknown.join("、")}`);
@@ -1724,7 +1740,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
     }
     for (const u of rec.uidAliases) if (!(p.uidAliases ||= []).includes(u)) p.uidAliases.push(u);
     for (const n of rec.nameAliases) if (!(p.nameAliases ||= []).includes(n)) p.nameAliases.push(n);
-    for (const t of [rec.uidNote && `統號變更：${rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote}`].filter(Boolean)) {
+    for (const t of [rec.uidNote && `統號變更：${rec.uidNote === "*" ? "有（匯出檔未載明）" : rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote === "*" ? "有（匯出檔未載明）" : rec.nameNote}`].filter(Boolean)) {
       if (!(p.changeNotes ||= []).includes(t)) p.changeNotes.push(t);
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
@@ -1840,14 +1856,14 @@ function hhrLink(persons, files) {
   for (const p of persons) {
     for (const rel of ["father", "mother"]) {
       const q = byId[p[rel]], nm = p[rel + "Name"];
-      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
+      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」${(q.changeNotes || []).some(t => t.startsWith("姓名變更")) ? `（${q.name}有姓名變更註記，「${nm}」可能是改名前的舊名）` : ""}，請確認`);
     }
   }
   inferGender();
   return { warnings: [...new Set(warnings)] };
 }
 
-// module.exports = { HHR_IGNORED, changeAliases, HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+// module.exports = { HHR_IGNORED, changeAliases, noteValue, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
 
 /* ============================================================
  * 承辦作業輔助
@@ -1946,6 +1962,11 @@ function followUps(fam, result, queried) {
     for (const [rel, label] of [["father", "父"], ["mother", "母"]]) {
       if (!dec[rel] && dec[rel + "Name"]) add("必要", did, `無第一順序繼承人，需確認被繼承人之${label}${dec[rel + "Name"]}的存歿，但此人不在資料中。請調閱其個人戶籍資料。`);
     }
+  }
+  // 變更註記為「*」：曾變更統號或姓名，但匯出檔未載明舊資料
+  for (const p of Object.values(fam.p)) {
+    const vague = (p.changeNotes || []).filter(t => t.includes("未載明"));
+    if (vague.length) add("建議", p.id, `${p.name}有${vague.map(t => t.split("：")[0]).join("、")}註記（匯出檔未載明舊資料）。若其他資料以舊名或舊統號記載此人，系統無法自動比對，請調閱個人戶籍資料確認，避免同一人被當成兩個人。`);
   }
   return out;
 }
@@ -2061,6 +2082,313 @@ function buildXlsx(rows, opts = {}) {
 // module.exports = { buildXlsx, xlsxCrc32 };
 
 /* ============================================================
+ * Excel 讀取（不依賴外部套件，離線可用）
+ * - .xlsx：自行解析 ZIP，以瀏覽器內建 DecompressionStream 解壓，再讀取第一張工作表
+ * - .xls（Excel 97-2003，BIFF8）：自行解析複合文件格式與 BIFF 紀錄
+ * - 部分系統匯出的 .xls 其實是 HTML 表格：以純文字方式解析（不插入畫面、不執行任何內容）
+ * - 日期格式的儲存格（Excel 日期序號）轉為西元日期；數字型民國日期（如 370512）保留數字交給日期解析
+ * 回傳 { rows: string[][], sheet: 工作表名稱, format: "xlsx" | "xls" | "html" }
+ * ============================================================ */
+"use strict";
+
+const XL_SIG = { zip: [0x50, 0x4B, 0x03, 0x04], cfb: [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1] };
+function xlStarts(b, sig) { return sig.every((v, i) => b[i] === v); }
+function xlKind(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (xlStarts(b, XL_SIG.zip)) return "xlsx";
+  if (xlStarts(b, XL_SIG.cfb)) return "xls";
+  const head = new TextDecoder("utf-8", { fatal: false }).decode(b.slice(0, 2048)).toLowerCase();
+  if (/<table|<html|<\?xml[^>]*>\s*<workbook/.test(head)) return "html";
+  return "";
+}
+
+/* ---------- 共用：日期序號與格式 ---------- */
+const XL_DATE_BUILTIN = new Set([14, 15, 16, 17, 22, 27, 28, 29, 30, 31, 34, 35, 36, 50, 51, 52, 53, 54, 57, 58]);
+function xlIsDateFormat(id, code) {
+  if (XL_DATE_BUILTIN.has(id)) return true;
+  if (!code) return false;
+  const c = code.replace(/"[^"]*"|\\.|\[[^\]]*\]/g, "");    // 去掉字串常值、跳脫字元、色彩與條件
+  return /[ymde]/i.test(c) && !/^(general|@|0|#)/i.test(c.trim());
+}
+function xlSerialToIso(n) {
+  if (!(n > 0 && n < 2958466)) return null;
+  const ms = Math.round((n - 25569) * 86400000);           // 1900 日期系統：25569 = 1970-01-01
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+function xlNum(n) { return Number.isInteger(n) ? String(n) : String(+n.toPrecision(15)); }
+function xlEntities(s) {
+  return s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (m, e) => {
+    const k = e.toLowerCase();
+    if (k[0] === "#") return String.fromCodePoint(k[1] === "x" ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10));
+    return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " }[k];
+  });
+}
+function xlColIndex(ref) { let n = 0; for (const ch of ref.replace(/\d+$/, "")) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; }
+
+/* ---------- .xlsx ---------- */
+async function xlUnzip(bytes) {
+  const b = bytes, dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let eocd = -1;
+  for (let i = b.length - 22; i >= Math.max(0, b.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054B50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("Excel 檔案結構不完整（找不到 ZIP 目錄）");
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const files = {};
+  const dec = new TextDecoder();
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(p, true) !== 0x02014B50) throw new Error("Excel 檔案結構不完整（ZIP 目錄錯誤）");
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const name = dec.decode(b.subarray(p + 46, p + 46 + nlen));
+    files[name] = { method, csize, local };
+    p += 46 + nlen + elen + clen;
+  }
+  const read = async name => {
+    const f = files[name];
+    if (!f) return null;
+    const start = f.local + 30 + dv.getUint16(f.local + 26, true) + dv.getUint16(f.local + 28, true);
+    const data = b.subarray(start, start + f.csize);
+    if (f.method === 0) return dec.decode(data);
+    if (f.method !== 8) throw new Error("Excel 使用了不支援的壓縮方式");
+    if (typeof DecompressionStream !== "function") throw new Error("瀏覽器版本過舊，無法讀取 .xlsx，請改用 Edge／Chrome 新版，或另存為 CSV");
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return dec.decode(await new Response(stream).arrayBuffer());
+  };
+  return { names: Object.keys(files), read };
+}
+function xlAttr(tag, name) { const m = tag.match(new RegExp(`\\s${name}="([^"]*)"`)); return m ? xlEntities(m[1]) : ""; }
+
+async function xlsxRows(bytes) {
+  const z = await xlUnzip(bytes);
+  const wb = await z.read("xl/workbook.xml");
+  if (!wb) throw new Error("不是有效的 Excel 活頁簿");
+  const firstSheet = (wb.match(/<(?:\w+:)?sheet\b[^>]*>/) || [""])[0];
+  const sheetName = xlAttr(firstSheet, "name") || "工作表1";
+  const rid = xlAttr(firstSheet, "r:id");
+  let target = "worksheets/sheet1.xml";
+  const rels = await z.read("xl/_rels/workbook.xml.rels");
+  if (rels && rid) {
+    for (const rel of rels.match(/<Relationship\b[^>]*>/g) || []) if (xlAttr(rel, "Id") === rid) target = xlAttr(rel, "Target");
+  }
+  const sheetPath = target.startsWith("/") ? target.slice(1) : "xl/" + target.replace(/^\.\//, "");
+  const xml = await z.read(sheetPath);
+  if (!xml) throw new Error("找不到工作表內容");
+
+  const textOf = frag => [...frag.matchAll(/<(?:\w+:)?t\b[^>]*>([\s\S]*?)<\/(?:\w+:)?t>/g)].map(m => xlEntities(m[1])).join("");
+  const sst = [];
+  const ss = await z.read("xl/sharedStrings.xml");
+  if (ss) for (const m of ss.matchAll(/<(?:\w+:)?si\b[^>]*>([\s\S]*?)<\/(?:\w+:)?si>/g)) sst.push(textOf(m[1].replace(/<(?:\w+:)?rPh\b[\s\S]*?<\/(?:\w+:)?rPh>/g, "")));
+
+  // 樣式：哪些儲存格格式是日期
+  const dateXf = new Set();
+  const st = await z.read("xl/styles.xml");
+  if (st) {
+    const codes = {};
+    for (const m of st.matchAll(/<(?:\w+:)?numFmt\b[^>]*>/g)) codes[+xlAttr(m[0], "numFmtId")] = xlAttr(m[0], "formatCode");
+    const xfs = (st.match(/<(?:\w+:)?cellXfs\b[\s\S]*?<\/(?:\w+:)?cellXfs>/) || [""])[0];
+    [...xfs.matchAll(/<(?:\w+:)?xf\b[^>]*>/g)].forEach((m, i) => { const id = +xlAttr(m[0], "numFmtId"); if (xlIsDateFormat(id, codes[id])) dateXf.add(i); });
+  }
+
+  const rows = [];
+  for (const rm of xml.matchAll(/<(?:\w+:)?row\b([^>]*)>([\s\S]*?)<\/(?:\w+:)?row>/g)) {
+    const r = +(xlAttr(" " + rm[1], "r") || rows.length + 1) - 1;
+    const row = [];
+    for (const cm of rm[2].matchAll(/<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g)) {
+      const attrs = " " + cm[1], inner = cm[2] || "";
+      const ref = xlAttr(attrs, "r"), t = xlAttr(attrs, "t"), sIdx = +(xlAttr(attrs, "s") || 0);
+      const col = ref ? xlColIndex(ref) : row.length;
+      const v = (inner.match(/<(?:\w+:)?v>([\s\S]*?)<\/(?:\w+:)?v>/) || [])[1];
+      let val = "";
+      if (t === "s") val = sst[+v] ?? "";
+      else if (t === "inlineStr") val = textOf(inner);
+      else if (t === "str" || t === "e") val = v !== undefined ? xlEntities(v) : "";
+      else if (t === "b") val = v === "1" ? "TRUE" : "FALSE";
+      else if (v !== undefined) { const n = +v; val = dateXf.has(sIdx) ? (xlSerialToIso(n) || xlNum(n)) : xlNum(n); }
+      row[col] = val;
+    }
+    rows[r] = Array.from(row, x => x ?? "");
+  }
+  return { rows: Array.from(rows, x => x || []), sheet: sheetName, format: "xlsx" };
+}
+
+/* ---------- .xls（BIFF8） ---------- */
+function cfbStream(bytes, wanted) {
+  const b = bytes, dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const ssz = 1 << dv.getUint16(0x1E, true), mssz = 1 << dv.getUint16(0x20, true);
+  const nFat = dv.getUint32(0x2C, true), dirStart = dv.getUint32(0x30, true), cutoff = dv.getUint32(0x38, true);
+  const miniFatStart = dv.getUint32(0x3C, true), difatStart = dv.getUint32(0x44, true);
+  const off = sid => (sid + 1) * ssz;
+  const END = 0xFFFFFFFA;
+  const fatSectors = [];
+  for (let i = 0; i < 109 && fatSectors.length < nFat; i++) fatSectors.push(dv.getUint32(0x4C + i * 4, true));
+  for (let d = difatStart, guard = 0; d < END && fatSectors.length < nFat && guard < 10000; guard++) {
+    const per = ssz / 4 - 1;
+    for (let i = 0; i < per && fatSectors.length < nFat; i++) fatSectors.push(dv.getUint32(off(d) + i * 4, true));
+    d = dv.getUint32(off(d) + per * 4, true);
+  }
+  const fat = [];
+  for (const s of fatSectors) for (let i = 0; i < ssz / 4; i++) fat.push(dv.getUint32(off(s) + i * 4, true));
+  const chain = (start, table) => { const out = []; for (let s = start, g = 0; s < END && g < 1e6; g++) { out.push(s); s = table[s]; } return out; };
+  const readChain = (start, size) => {
+    const out = new Uint8Array(size); let p = 0;
+    for (const s of chain(start, fat)) { const n = Math.min(ssz, size - p); if (n <= 0) break; out.set(b.subarray(off(s), off(s) + n), p); p += n; }
+    return out;
+  };
+  // 目錄
+  const dirSids = chain(dirStart, fat);
+  const entries = [];
+  for (const s of dirSids) for (let i = 0; i < ssz / 128; i++) {
+    const base = off(s) + i * 128;
+    const nlen = dv.getUint16(base + 0x40, true);
+    const name = String.fromCharCode(...Array.from({ length: Math.max(0, nlen / 2 - 1) }, (_, k) => dv.getUint16(base + k * 2, true)));
+    entries.push({ name, type: b[base + 0x42], start: dv.getUint32(base + 0x74, true), size: dv.getUint32(base + 0x78, true) });
+  }
+  const root = entries.find(e => e.type === 5);
+  const ent = entries.find(e => e.type === 2 && wanted.includes(e.name));
+  if (!ent) return null;
+  if (ent.size >= cutoff) return readChain(ent.start, ent.size);
+  // 小於門檻的串流存在迷你串流中
+  const miniStream = readChain(root.start, root.size);
+  const nMini = dv.getUint32(0x40, true);
+  const miniFatBytes = readChain(miniFatStart, nMini * ssz);
+  const mdv = new DataView(miniFatBytes.buffer);
+  const miniFat = Array.from({ length: miniFatBytes.length / 4 }, (_, i) => mdv.getUint32(i * 4, true));
+  const out = new Uint8Array(ent.size); let p = 0;
+  for (const s of chain(ent.start, miniFat)) { const n = Math.min(mssz, ent.size - p); if (n <= 0) break; out.set(miniStream.subarray(s * mssz, s * mssz + n), p); p += n; }
+  return out;
+}
+
+function xlsRows(bytes) {
+  const wb = cfbStream(bytes, ["Workbook", "Book"]);
+  if (!wb) throw new Error("讀不到 .xls 的活頁簿內容，請在 Excel 另存為 .xlsx 後再匯入");
+  const dv = new DataView(wb.buffer, wb.byteOffset, wb.byteLength);
+  const recs = [];
+  for (let p = 0; p + 4 <= wb.length;) {
+    const type = dv.getUint16(p, true), len = dv.getUint16(p + 2, true);
+    recs.push({ type, pos: p + 4, len });
+    p += 4 + len;
+  }
+  if (!recs.length || recs[0].type !== 0x0809 || dv.getUint16(recs[0].pos, true) !== 0x0600) {
+    throw new Error("這是較舊的 Excel 格式（Excel 95 以前），請在 Excel 另存為 .xlsx 後再匯入");
+  }
+  const u16 = p => dv.getUint16(p, true), u32 = p => dv.getUint32(p, true);
+  const dec16 = new TextDecoder("utf-16le"), dec8 = new TextDecoder("latin1");
+
+  // 讀取可能跨越 CONTINUE 紀錄的字串
+  function makeReader(segs) {
+    let si = 0, p = segs[0].pos;
+    const left = () => segs[si].pos + segs[si].len - p;
+    const next = () => { si++; p = segs[si].pos; };
+    return {
+      u8() { if (left() < 1) next(); return wb[p++]; },
+      u16() { if (left() < 2) next(); const v = u16(p); p += 2; return v; },
+      u32() { if (left() < 4) next(); const v = u32(p); p += 4; return v; },
+      skip(n) { while (n > 0) { if (left() === 0) next(); const k = Math.min(n, left()); p += k; n -= k; } },
+      str(cch, flags) {
+        let out = "", wide = flags & 1;
+        while (cch > 0) {
+          if (left() === 0) { next(); wide = wb[p++] & 1; }
+          const can = Math.min(cch, wide ? Math.floor(left() / 2) : left());
+          const bytes = wb.subarray(p, p + can * (wide ? 2 : 1));
+          out += wide ? dec16.decode(bytes) : dec8.decode(bytes);
+          p += bytes.length; cch -= can;
+        }
+        return out;
+      },
+    };
+  }
+  const xlString = r => {
+    const cch = r.u16(), flags = r.u8();
+    const runs = flags & 8 ? r.u16() : 0, ext = flags & 4 ? r.u32() : 0;
+    const s = r.str(cch, flags);
+    r.skip(runs * 4 + ext);
+    return s;
+  };
+
+  const sst = [], formats = {}, xfFmt = [], sheets = [];
+  for (let i = 0; i < recs.length; i++) {
+    const r = recs[i];
+    if (r.type === 0x00FC) {                                 // SST（含後續 CONTINUE）
+      const segs = [r];
+      while (recs[i + 1] && recs[i + 1].type === 0x003C) segs.push(recs[++i]);
+      const rd = makeReader(segs);
+      rd.u32(); const n = rd.u32();
+      for (let k = 0; k < n; k++) sst.push(xlString(rd));
+    } else if (r.type === 0x041E) {                          // FORMAT
+      const rd = makeReader([r]); const id = rd.u16(); formats[id] = xlString(rd);
+    } else if (r.type === 0x00E0) {                          // XF
+      xfFmt.push(u16(r.pos + 2));
+    } else if (r.type === 0x0085) {                          // BOUNDSHEET
+      const rd = makeReader([r]); const at = rd.u32(); rd.u8(); const kind = rd.u8();
+      const cch = rd.u8(), flags = rd.u8();
+      sheets.push({ at, kind, name: rd.str(cch, flags) });
+    }
+  }
+  const sheet = sheets.find(s => s.kind === 0) || sheets[0];
+  if (!sheet) throw new Error("活頁簿中沒有工作表");
+  const isDateXf = xf => xlIsDateFormat(xfFmt[xf], formats[xfFmt[xf]]);
+  const rkVal = rk => { let v = rk & 2 ? (rk >> 2) : new DataView(new Uint32Array([0, rk & 0xFFFFFFFC]).buffer).getFloat64(0, true); if (rk & 1) v /= 100; return v; };
+  const numText = (n, xf) => (isDateXf(xf) ? (xlSerialToIso(n) || xlNum(n)) : xlNum(n));
+
+  const rows = [];
+  const put = (r, c, v) => { (rows[r] ||= [])[c] = v; };
+  let i = recs.findIndex(r => r.pos - 4 === sheet.at);
+  if (i < 0) throw new Error("找不到工作表內容");
+  let pendingFormula = null;
+  for (i++; i < recs.length; i++) {
+    const r = recs[i], p = r.pos;
+    if (r.type === 0x000A) break;                            // EOF
+    if (r.type === 0x00FD) put(u16(p), u16(p + 2), sst[u32(p + 6)] ?? "");                       // LABELSST
+    else if (r.type === 0x0203) put(u16(p), u16(p + 2), numText(dv.getFloat64(p + 6, true), u16(p + 4)));  // NUMBER
+    else if (r.type === 0x027E) put(u16(p), u16(p + 2), numText(rkVal(u32(p + 6)), u16(p + 4)));           // RK
+    else if (r.type === 0x00BD) {                           // MULRK
+      const row = u16(p), first = u16(p + 2), n = (r.len - 6) / 6;
+      for (let k = 0; k < n; k++) put(row, first + k, numText(rkVal(u32(p + 4 + k * 6 + 2)), u16(p + 4 + k * 6)));
+    } else if (r.type === 0x0204) {                         // LABEL
+      const rd = makeReader([{ pos: p + 6, len: r.len - 6 }]); put(u16(p), u16(p + 2), xlString(rd));
+    } else if (r.type === 0x0006) {                         // FORMULA（取快取結果）
+      if (u16(p + 12) === 0xFFFF) { if (wb[p + 6] === 0) pendingFormula = [u16(p), u16(p + 2)]; }
+      else put(u16(p), u16(p + 2), numText(dv.getFloat64(p + 6, true), u16(p + 4)));
+    } else if (r.type === 0x0207 && pendingFormula) {       // STRING（公式的字串結果）
+      const rd = makeReader([r]); put(pendingFormula[0], pendingFormula[1], xlString(rd)); pendingFormula = null;
+    }
+  }
+  return { rows: Array.from(rows, x => Array.from(x || [], v => v ?? "")), sheet: sheet.name, format: "xls" };
+}
+
+/* ---------- HTML 表格偽裝的 .xls ---------- */
+function htmlTableRows(bytes) {
+  let text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  if (/charset=["']?big5/i.test(text.slice(0, 2048))) text = new TextDecoder("big5").decode(bytes);
+  const strip = s => xlEntities(s.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
+  const rows = [];
+  for (const tr of text.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const row = [];
+    for (const td of tr[1].matchAll(/<t([dh])\b([^>]*)>([\s\S]*?)<\/t\1>/gi)) {
+      row.push(strip(td[3]));
+      const span = +((td[2].match(/colspan\s*=\s*["']?(\d+)/i) || [])[1] || 1);
+      for (let k = 1; k < span; k++) row.push("");
+    }
+    rows.push(row);
+  }
+  if (!rows.length) throw new Error("檔案中沒有表格資料");
+  return { rows, sheet: "", format: "html" };
+}
+
+async function excelReadRows(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  const kind = xlKind(bytes);
+  if (kind === "xlsx") return xlsxRows(bytes);
+  if (kind === "xls") return xlsRows(bytes);
+  if (kind === "html") return htmlTableRows(bytes);
+  throw new Error("無法辨識的 Excel 檔案格式");
+}
+
+// module.exports = { excelReadRows, xlKind, xlSerialToIso, xlIsDateFormat };
+
+/* ============================================================
  * PDF 讀取：把戶政系統匯出的文字型 PDF 還原成表格（欄位＋資料列）
  * - 使用內嵌的 pdf.js（Apache-2.0），於主執行緒執行，不連網
  * - 中文 CMap 內嵌於頁面，不從網路下載
@@ -2118,7 +2446,10 @@ async function pdfTextItems(data, opts = {}, missing = []) {
 }
 
 const PDF_HEADER_WORDS = ["姓名", "統一編號", "身分證統一編號", "身分證字號", "稱謂", "關係", "出生日期", "出生年月日",
-  "死亡日期", "死亡年月日", "性別", "父姓名", "母姓名", "配偶姓名", "父親姓名", "母親姓名", "與本人關係"];
+  "死亡日期", "死亡年月日", "性別", "父姓名", "母姓名", "配偶姓名", "父親姓名", "母親姓名", "與本人關係",
+  "統號", "父親統號", "母親統號", "配偶統號", "結婚日期", "統號變更註記", "姓名變更註記", "項目"];
+/* 兩行表頭的第二行常見片段（例如「配偶／統號」「姓名變更／註記」） */
+const PDF_HEADER_TAIL = /^(統號|統一編號|姓名|日期|年月日|註記|變更註記|編號|關係)$/;
 const pdfNorm = s => String(s || "").replace(/[\s　]/g, "");
 
 /* 同一頁內，依 y 座標分成多行；每行依 x 排序 */
@@ -2176,15 +2507,31 @@ async function pdfReadTable(data, opts = {}) {
     });
   };
 
-  const uidCol = () => headers.findIndex(h => ["統一編號", "身分證統一編號", "身分證字號"].includes(h));
+  const uidCol = () => headers.findIndex(h => ["統一編號", "身分證統一編號", "身分證字號", "統號"].includes(h));
+  // 兩行表頭：下一行緊接在表頭下方，且全是「統號」「日期」「註記」這類片段 → 依水平位置接到上一行的欄名
+  const headerTail = (chunks, line, next) => {
+    if (!next || line.y - next.y > line.size * 1.9) return false;
+    const tail = pdfChunks(next);
+    if (!tail.length || !tail.every(t => PDF_HEADER_TAIL.test(pdfNorm(t.str)))) return false;
+    for (const t of tail) {
+      const cx = t.x + t.w / 2;
+      let best = null, dist = Infinity;
+      for (const c of chunks) { const d = Math.abs(c.x + c.w / 2 - cx); if (d < dist) { dist = d; best = c; } }
+      if (best) best.str = pdfNorm(best.str) + pdfNorm(t.str);
+    }
+    return true;
+  };
+  let skipLine = -1;
   pageLines.forEach((lines, pi) => {
     let pageHasHeader = false;
-    lastRowY = null;
+    lastRowY = null; skipLine = -1;
     const hIdx = lines.findIndex(pdfIsHeader);           // 表頭以上（標題、查詢條件）不屬於表格
     lines.forEach((line, li) => {
       if (hIdx > 0 && li < hIdx) return;
+      if (li === skipLine) return;
       if (pdfIsHeader(line)) {
         const chunks = pdfChunks(line);
+        if (headerTail(chunks, line, lines[li + 1])) skipLine = li + 1;
         const key = chunks.map(c => pdfNorm(c.str)).join("|");
         if (!headers) { headers = chunks.map(c => pdfNorm(c.str)); headerKey = key; }
         else if (key !== headerKey) meta.notes.push(`第 ${pi + 1} 頁的表頭與第一頁不同，已依第一頁欄位讀取`);
@@ -2212,7 +2559,9 @@ async function pdfReadTable(data, opts = {}) {
       }
       // 頁尾、頁碼、說明文字：欄數太少或沒有姓名
       const ui = uidCol();
-      const badUid = ui >= 0 && !/^[A-Za-z][0-9A-Za-z]\d{8}$/.test(pdfNorm(trimmed[ui]));
+      // 統一編號欄有字但不像統號 → 標題或說明文字；空白則可能是早年死亡、無統號的人（至少要有 3 欄資料）
+      const uv = pdfNorm(trimmed[ui] || "");
+      const badUid = ui >= 0 && (uv ? !/^[A-Za-z][0-9A-Za-z]\d{8}$/.test(uv) : filled < 3);
       if (filled < 2 || !trimmed[nameIdx] || badUid) {
         const txt = trimmed.filter(Boolean).join(" ");
         if (filled && !/^(第?\s*\d+\s*頁.*|page\s*\d+.*|\d+\s*[\/／]\s*\d+)$/i.test(pdfNorm(txt))) meta.notes.push(`略過非表格文字：「${trimmed.filter(Boolean).join(" ").slice(0, 30)}」（第 ${pi + 1} 頁）`);
@@ -2399,6 +2748,7 @@ async function importFiles(fileList) {
       const buf = await readBytes(f);
       const head = String.fromCharCode(...new Uint8Array(buf.slice(0, 5)));
       if (/\.pdf$/i.test(f.name) || head === "%PDF-") { blocks.push(await importPdf(f.name, buf, false)); continue; }
+      if (/\.(xlsx|xls)$/i.test(f.name) || xlKind(buf)) { blocks.push(await importExcel(f.name, buf, false)); continue; }
       const { text, encoding } = decodeBytes(buf);
       blocks.push(await importOne(f.name, text, encoding, false));
     } catch (err) { blocks.push({ cls: "error", title: `${f.name}：無法讀取`, items: [err.message] }); }
@@ -2414,6 +2764,18 @@ async function importOne(name, text, encoding, auto) {
     return { cls: "ok", title: `${name}：已載入案件檔，共 ${state.persons.length} 人` };
   }
   return importTable(name, hhrReadTable(text), `${encoding} 編碼`, auto, [], text);
+}
+
+/* Excel（.xlsx／.xls）：讀出第一張工作表的儲存格，再走同一套對應與匯入流程 */
+async function importExcel(name, buf, auto) {
+  let sheet;
+  try { sheet = await excelReadRows(buf); }
+  catch (e) { return { cls: "error", title: `${name}：無法讀取 Excel`, items: [e.message, "若檔案有密碼保護，請先在 Excel 移除密碼；也可在 Excel 另存為 CSV 後匯入。"] }; }
+  const table = hhrTableFromRows(sheet.rows);
+  if (!table.body.length) return { cls: "error", title: `${name}：工作表中讀不到人員資料`, items: ["請確認第一張工作表就是二親等／個人戶籍資料。"] };
+  const csvText = sheet.rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v).join(",")).join("\n");
+  const label = { xlsx: "Excel 活頁簿", xls: "Excel 97-2003 活頁簿", html: "網頁格式的 Excel 檔" }[sheet.format];
+  return importTable(name, table, `${label}${sheet.sheet ? `・工作表「${sheet.sheet}」` : ""}`, auto, [], csvText);
 }
 
 /* PDF：先還原成表格，再走同一套對應與匯入流程 */
@@ -2464,7 +2826,7 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
   const link = hhrLink(state.persons, state.files);
   const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
-    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（本人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（被查詢人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
 }
 
 /* 欄位對應視窗 */
@@ -2706,7 +3068,7 @@ function renderFileList() {
   for (const f of state.files) {
     const a = state.persons.find(p => f.anchor && normUid(p.uid) === f.anchor);
     const li = document.createElement("li");
-    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（本人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
+    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（被查詢人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
     ul.appendChild(li);
   }
   box.appendChild(ul);
@@ -2770,7 +3132,7 @@ function enginePersons() {
     deathTime: (p.deathTime || "").trim(), fetus: p.fetus || "",
     marriageEnd: parseDate(p.marriageEndRaw), _marriageEndRaw: (p.marriageEndRaw || "").trim(),
     father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
-    fatherName: p.fatherName || "", motherName: p.motherName || "",
+    fatherName: p.fatherName || "", motherName: p.motherName || "", changeNotes: p.changeNotes || [],
     renounced: renouncedOf(p), lost_right: p.lost_right,
   }));
 }

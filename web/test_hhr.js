@@ -95,7 +95,7 @@ const cases = {
   "資料不一致時提示，不默默覆蓋": () => {
     const c = newCase();
     importFile(c, "範例1_王大明_二親等資料.csv");
-    const text = fs.readFileSync(path.join(DATA, "範例2_王淑娟_二親等資料.csv"), "utf8").replace("064/06/30,109/06/01", "064/06/30,109/06/02");
+    const text = fs.readFileSync(path.join(DATA, "範例2_王淑娟_二親等資料.csv"), "utf8").replace("0640630,1090601", "0640630,1090602");
     const table = hhrReadTable(text.replace(/^﻿/, ""));
     const parsed = hhrParse(table, hhrGuessMapping(table.headers), "kin");
     const m = hhrMerge(c.persons, parsed, "B.csv", () => "X");
@@ -120,13 +120,34 @@ const cases = {
     assert.strictEqual(fu[0].uid, "");
     assert.strictEqual(byName(c, "王大明").father, fu[0].id);
   },
-  "姓名變更：父母姓名記為舊名，仍能連到改名後的人": () => {
+  "稱謂「自己」視為被查詢人；日期 0370512 正確轉換": () => {
     const c = newCase();
     const r = importFile(c, "範例1_王大明_二親等資料.csv");
-    assert.deepStrictEqual(byName(c, "王淑芬").nameAliases, ["王淑華"]);
+    assert.strictEqual(c.persons.find(p => p.uid === r.parsed.anchorUid).name, "王大明");
+    assert.strictEqual(byName(c, "王大明").birthRaw, "37/5/12");
+    assert.strictEqual(byName(c, "王福來").birthRaw, "9/2/1");
+  },
+  "姓名變更註記「*」：提示人工確認，母親姓名為舊名仍依母親統號連結": () => {
+    const c = newCase();
+    const r = importFile(c, "範例1_王大明_二親等資料.csv");
+    assert.deepStrictEqual(byName(c, "王淑芬").nameAliases, []);
+    assert.deepStrictEqual(byName(c, "王淑芬").changeNotes, ["姓名變更：有（匯出檔未載明）"]);
+    assert.ok(r.parsed.warnings.some(w => w.includes("王淑芬") && w.includes("「*」")));
     assert.strictEqual(byName(c, "陳小美").mother, byName(c, "王淑芬").id);
-    assert.ok(r.parsed.warnings.some(w => w.includes("姓名變更註記")));
-    assert.ok(!r.link.warnings.some(w => w.includes("陳小美") && w.includes("王淑華")));
+    assert.strictEqual(r.parsed.warnings.filter(w => w.includes("變更註記")).length, 1);   // 空白不提示
+  },
+  "變更註記若載明舊名，仍會解析為曾用名": () => {
+    const t = hhrReadTable("稱謂,姓名,統號,母親姓名,姓名變更註記\n自己,陳小美,A000000022,王淑華,\n母,王淑芬,A000000012,,原名王淑華");
+    const parsed = hhrParse(t, hhrGuessMapping(t.headers), "kin");
+    const persons = [];
+    hhrMerge(persons, parsed, "x.csv", () => "N1");
+    hhrLink(persons, [{ name: "x.csv", kind: "kin", anchor: parsed.anchorUid, rels: parsed.records.map(r => ({ uid: r.uid, relation: r.relation })) }]);
+    assert.deepStrictEqual(persons.find(p => p.name === "王淑芬").nameAliases, ["王淑華"]);
+    assert.strictEqual(persons.find(p => p.name === "陳小美").mother, "A000000012");
+  },
+  "noteValue：空白、-、無 視為無變更；* ＊ 視為有變更未載明": () => {
+    const { noteValue } = require("./hhr.js");
+    assert.deepStrictEqual(["", " ", "-", "無", "*", "＊", "**", "原名甲乙"].map(noteValue), ["", "", "", "", "*", "*", "*", "原名甲乙"]);
   },
   "性別由父母連結推得（匯出檔無性別欄）": () => {
     const c = newCase();
@@ -140,9 +161,9 @@ const cases = {
     assert.deepStrictEqual(Object.keys(m).sort(), ["birth", "name", "relation", "uid"]);
     assert.strictEqual(hhrGuessKind(t.headers), "kin");
   },
-  "缺少本人列 → 擋下": () => {
+  "缺少自己／本人列 → 擋下": () => {
     const t = hhrReadTable("稱謂,姓名,統一編號\n父,甲,A000000001");
-    assert.ok(hhrParse(t, hhrGuessMapping(t.headers), "kin").errors.some(e => e.includes("本人")));
+    assert.ok(hhrParse(t, hhrGuessMapping(t.headers), "kin").errors.some(e => e.includes("自己")));
   },
 };
 let fail = 0;

@@ -56,7 +56,10 @@ async function pdfTextItems(data, opts = {}, missing = []) {
 }
 
 const PDF_HEADER_WORDS = ["姓名", "統一編號", "身分證統一編號", "身分證字號", "稱謂", "關係", "出生日期", "出生年月日",
-  "死亡日期", "死亡年月日", "性別", "父姓名", "母姓名", "配偶姓名", "父親姓名", "母親姓名", "與本人關係"];
+  "死亡日期", "死亡年月日", "性別", "父姓名", "母姓名", "配偶姓名", "父親姓名", "母親姓名", "與本人關係",
+  "統號", "父親統號", "母親統號", "配偶統號", "結婚日期", "統號變更註記", "姓名變更註記", "項目"];
+/* 兩行表頭的第二行常見片段（例如「配偶／統號」「姓名變更／註記」） */
+const PDF_HEADER_TAIL = /^(統號|統一編號|姓名|日期|年月日|註記|變更註記|編號|關係)$/;
 const pdfNorm = s => String(s || "").replace(/[\s　]/g, "");
 
 /* 同一頁內，依 y 座標分成多行；每行依 x 排序 */
@@ -114,15 +117,31 @@ async function pdfReadTable(data, opts = {}) {
     });
   };
 
-  const uidCol = () => headers.findIndex(h => ["統一編號", "身分證統一編號", "身分證字號"].includes(h));
+  const uidCol = () => headers.findIndex(h => ["統一編號", "身分證統一編號", "身分證字號", "統號"].includes(h));
+  // 兩行表頭：下一行緊接在表頭下方，且全是「統號」「日期」「註記」這類片段 → 依水平位置接到上一行的欄名
+  const headerTail = (chunks, line, next) => {
+    if (!next || line.y - next.y > line.size * 1.9) return false;
+    const tail = pdfChunks(next);
+    if (!tail.length || !tail.every(t => PDF_HEADER_TAIL.test(pdfNorm(t.str)))) return false;
+    for (const t of tail) {
+      const cx = t.x + t.w / 2;
+      let best = null, dist = Infinity;
+      for (const c of chunks) { const d = Math.abs(c.x + c.w / 2 - cx); if (d < dist) { dist = d; best = c; } }
+      if (best) best.str = pdfNorm(best.str) + pdfNorm(t.str);
+    }
+    return true;
+  };
+  let skipLine = -1;
   pageLines.forEach((lines, pi) => {
     let pageHasHeader = false;
-    lastRowY = null;
+    lastRowY = null; skipLine = -1;
     const hIdx = lines.findIndex(pdfIsHeader);           // 表頭以上（標題、查詢條件）不屬於表格
     lines.forEach((line, li) => {
       if (hIdx > 0 && li < hIdx) return;
+      if (li === skipLine) return;
       if (pdfIsHeader(line)) {
         const chunks = pdfChunks(line);
+        if (headerTail(chunks, line, lines[li + 1])) skipLine = li + 1;
         const key = chunks.map(c => pdfNorm(c.str)).join("|");
         if (!headers) { headers = chunks.map(c => pdfNorm(c.str)); headerKey = key; }
         else if (key !== headerKey) meta.notes.push(`第 ${pi + 1} 頁的表頭與第一頁不同，已依第一頁欄位讀取`);
@@ -150,7 +169,9 @@ async function pdfReadTable(data, opts = {}) {
       }
       // 頁尾、頁碼、說明文字：欄數太少或沒有姓名
       const ui = uidCol();
-      const badUid = ui >= 0 && !/^[A-Za-z][0-9A-Za-z]\d{8}$/.test(pdfNorm(trimmed[ui]));
+      // 統一編號欄有字但不像統號 → 標題或說明文字；空白則可能是早年死亡、無統號的人（至少要有 3 欄資料）
+      const uv = pdfNorm(trimmed[ui] || "");
+      const badUid = ui >= 0 && (uv ? !/^[A-Za-z][0-9A-Za-z]\d{8}$/.test(uv) : filled < 3);
       if (filled < 2 || !trimmed[nameIdx] || badUid) {
         const txt = trimmed.filter(Boolean).join(" ");
         if (filled && !/^(第?\s*\d+\s*頁.*|page\s*\d+.*|\d+\s*[\/／]\s*\d+)$/i.test(pdfNorm(txt))) meta.notes.push(`略過非表格文字：「${trimmed.filter(Boolean).join(" ").slice(0, 30)}」（第 ${pi + 1} 頁）`);

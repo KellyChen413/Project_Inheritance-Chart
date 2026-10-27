@@ -22,7 +22,7 @@ cols = ["稱謂", "姓名", "統一編號", "性別", "出生日期", "死亡日
 src = {"父姓名": "父親姓名", "母姓名": "母親姓名"}
 idx = {h: i for i, h in enumerate(rows[0])}
 def pick(r, c):
-    if c == "性別": return {"長男": "男", "次男": "男", "弟": "男", "孫": "男", "外孫": "男", "長女": "女", "次女": "女", "外孫女": "女", "母": "女", "配偶": "女", "父": "男", "本人": "男"}.get(r[idx["稱謂"]], "")
+    if c == "性別": return {"長男": "男", "次男": "男", "弟": "男", "孫": "男", "外孫": "男", "長女": "女", "次女": "女", "外孫女": "女", "母": "女", "配偶": "女", "父": "男", "本人": "男", "自己": "男"}.get(r[idx["稱謂"]], "")
     return r[idx[src.get(c, c)]]
 head, data = cols, [[pick(r, c) for c in cols] for r in rows[1:]]
 W, H = landscape(A4)
@@ -41,6 +41,29 @@ for pi, chunk in enumerate([data[:7], data[7:]]):
                 c.drawString(x, y, "黃雅"); c.drawString(x, y - 12, "婷"); continue
             c.drawString(x, y, v)
         y -= 34 if r[1] == "王志偉" else 26
+    c.showPage()
+c.save()
+
+# 範例5：戶役政實際 16 欄版面，兩行表頭（例如「配偶／統號」），含無統號的人、變更註記「*」，2 頁
+real = rows
+cols5 = real[0]
+top = {"配偶統號": ("配偶", "統號"), "配偶姓名": ("配偶", "姓名"), "父親統號": ("父親", "統號"), "父親姓名": ("父親", "姓名"),
+       "母親統號": ("母親", "統號"), "母親姓名": ("母親", "姓名"), "統號變更註記": ("統號變更", "註記"), "姓名變更註記": ("姓名變更", "註記")}
+xs5 = [22, 46, 74, 128, 168, 200, 240, 280, 320, 374, 412, 466, 504, 558, 598, 652]
+c = canvas.Canvas(str(OUT / "範例5_王大明_二親等資料_實際版面.pdf"), pagesize=(W, H))
+for pi, chunk in enumerate([real[1:8], real[8:]]):
+    c.setFont(F, 14); c.drawString(22, H - 40, "二親等關聯資料（虛構範例）")
+    c.setFont(F, 8)
+    for x, h in zip(xs5, cols5):
+        a, b = top.get(h, (h, ""))
+        c.drawString(x, H - 70, a)
+        if b: c.drawString(x, H - 80, b)
+    c.line(20, H - 85, W - 20, H - 85)
+    y = H - 100
+    for r in chunk:
+        for x, v in zip(xs5, r): c.drawString(x, y, v)
+        y -= 18
+    c.drawString(W / 2 - 20, 25, f"{pi + 1} / 2")
     c.showPage()
 c.save()
 

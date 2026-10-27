@@ -34,6 +34,14 @@ const HHR_FIELDS = [
 /* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
 const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
 
+/* 變更註記的值：空白、「-」「無」視為沒有變更；「*」表示有變更但匯出檔未載明內容 */
+function noteValue(v) {
+  const t = String(v || "").replace(/[\s　]/g, "");
+  if (!t || /^(-|－|—|無|否|N|n|0)$/.test(t)) return "";
+  if (/^[*＊※]+$/.test(t)) return "*";
+  return String(v).trim();
+}
+
 /* 從變更註記中找出舊統號、舊姓名，供合併與父母姓名比對使用 */
 function changeAliases(uidNote, nameNote, uid, name) {
   const uids = [...new Set((String(uidNote || "").toUpperCase().match(/[A-Z][0-9A-Z]\d{8}/g) || []).filter(u => u !== uid))];
@@ -50,7 +58,7 @@ const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
 
 /* 稱謂分類（相對於本人） */
 const REL = {
-  self:    /^本人$/,
+  self:    /^(本人|自己|查詢人|當事人)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
   father:  /^(父|父親|養父)$/,
   mother:  /^(母|母親|養母)$/,
   spouse:  /^(配偶|夫|妻|丈夫|妻子|先生|太太)$/,
@@ -78,12 +86,16 @@ function maskUid(uid) {
 }
 
 /* ---------- 讀檔 ---------- */
-function hhrReadTable(text) {
-  const rows = hhrCsv(text);
+function hhrReadTable(text) { return hhrTableFromRows(hhrCsv(text)); }
+/* Excel、PDF 等已拆成儲存格的資料：找出表頭列（含「姓名」的那一列），其上方的標題列略過 */
+function hhrTableFromRows(rows) {
+  rows = rows.map(r => r.map(v => String(v ?? "")));
   const names = HHR_FIELDS.find(f => f.key === "name").syn;
   const idx = rows.findIndex(r => r.some(v => names.includes(normHeader(v))));
   if (idx < 0) return { headers: rows[0] || [], body: rows.slice(1), headerRow: 1 };
-  return { headers: rows[idx].map(h => String(h).trim()), body: rows.slice(idx + 1), headerRow: idx + 1 };
+  // 去除完全空白的列（Excel 常有格式殘留的空列）
+  const body = rows.slice(idx + 1).filter(r => r.some(v => v.trim()));
+  return { headers: rows[idx].map(h => String(h).trim()), body, headerRow: idx + 1 };
 }
 
 function hhrGuessMapping(headers) {
@@ -138,10 +150,12 @@ function hhrParse(table, mapping, kind) {
     const rec = { line, uid, name, gender, relation, birth: get("birth"), death: get("death"),
       fatherName: get("fatherName"), motherName: get("motherName"), spouseName: get("spouseName"),
       fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")),
-      marriageDate: get("marriageDate"), uidNote: get("uidNote"), nameNote: get("nameNote"), noUid };
+      marriageDate: get("marriageDate"), uidNote: noteValue(get("uidNote")), nameNote: noteValue(get("nameNote")), noUid };
     Object.assign(rec, changeAliases(rec.uidNote, rec.nameNote, uid, name));
-    if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
-    if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
+    if (rec.uidNote === "*") warnings.push(`第 ${line} 列（${name}）統號變更註記為「*」：曾變更統一編號，但匯出檔未載明舊統號；若其他檔案以舊統號記載此人，請人工確認是否為同一人`);
+    else if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
+    if (rec.nameNote === "*") warnings.push(`第 ${line} 列（${name}）姓名變更註記為「*」：曾變更姓名，但匯出檔未載明舊名；子女資料中的父母姓名若對不上，請調閱個人戶籍資料確認舊名`);
+    else if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
     for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
@@ -151,10 +165,10 @@ function hhrParse(table, mapping, kind) {
   let anchorUid = null;
   if (kind === "kin") {
     const selves = records.filter(r => REL.self.test(r.relation));
-    if (!selves.length) errors.push("找不到稱謂為「本人」的列，無法判斷其他人與本人的關係");
+    if (!selves.length) errors.push("找不到稱謂為「自己」（或「本人」）的列，無法判斷其他人與被查詢人的關係");
     else {
       anchorUid = selves[0].uid;
-      if (selves.length > 1) warnings.push(`有 ${selves.length} 列稱謂為「本人」，以第一列（${selves[0].name}）為本人`);
+      if (selves.length > 1) warnings.push(`有 ${selves.length} 列稱謂為「自己」／「本人」，以第一列（${selves[0].name}）為本人`);
     }
     const unknown = [...new Set(records.map(r => r.relation).filter(r => r && !Object.values(REL).some(re => re.test(r))))];
     if (unknown.length) warnings.push(`以下稱謂改依父母姓名判斷關係：${unknown.join("、")}`);
@@ -185,7 +199,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
     }
     for (const u of rec.uidAliases) if (!(p.uidAliases ||= []).includes(u)) p.uidAliases.push(u);
     for (const n of rec.nameAliases) if (!(p.nameAliases ||= []).includes(n)) p.nameAliases.push(n);
-    for (const t of [rec.uidNote && `統號變更：${rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote}`].filter(Boolean)) {
+    for (const t of [rec.uidNote && `統號變更：${rec.uidNote === "*" ? "有（匯出檔未載明）" : rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote === "*" ? "有（匯出檔未載明）" : rec.nameNote}`].filter(Boolean)) {
       if (!(p.changeNotes ||= []).includes(t)) p.changeNotes.push(t);
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
@@ -301,11 +315,11 @@ function hhrLink(persons, files) {
   for (const p of persons) {
     for (const rel of ["father", "mother"]) {
       const q = byId[p[rel]], nm = p[rel + "Name"];
-      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
+      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」${(q.changeNotes || []).some(t => t.startsWith("姓名變更")) ? `（${q.name}有姓名變更註記，「${nm}」可能是改名前的舊名）` : ""}，請確認`);
     }
   }
   inferGender();
   return { warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, noteValue, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };

@@ -149,6 +149,7 @@ async function importFiles(fileList) {
       const buf = await readBytes(f);
       const head = String.fromCharCode(...new Uint8Array(buf.slice(0, 5)));
       if (/\.pdf$/i.test(f.name) || head === "%PDF-") { blocks.push(await importPdf(f.name, buf, false)); continue; }
+      if (/\.(xlsx|xls)$/i.test(f.name) || xlKind(buf)) { blocks.push(await importExcel(f.name, buf, false)); continue; }
       const { text, encoding } = decodeBytes(buf);
       blocks.push(await importOne(f.name, text, encoding, false));
     } catch (err) { blocks.push({ cls: "error", title: `${f.name}：無法讀取`, items: [err.message] }); }
@@ -164,6 +165,18 @@ async function importOne(name, text, encoding, auto) {
     return { cls: "ok", title: `${name}：已載入案件檔，共 ${state.persons.length} 人` };
   }
   return importTable(name, hhrReadTable(text), `${encoding} 編碼`, auto, [], text);
+}
+
+/* Excel（.xlsx／.xls）：讀出第一張工作表的儲存格，再走同一套對應與匯入流程 */
+async function importExcel(name, buf, auto) {
+  let sheet;
+  try { sheet = await excelReadRows(buf); }
+  catch (e) { return { cls: "error", title: `${name}：無法讀取 Excel`, items: [e.message, "若檔案有密碼保護，請先在 Excel 移除密碼；也可在 Excel 另存為 CSV 後匯入。"] }; }
+  const table = hhrTableFromRows(sheet.rows);
+  if (!table.body.length) return { cls: "error", title: `${name}：工作表中讀不到人員資料`, items: ["請確認第一張工作表就是二親等／個人戶籍資料。"] };
+  const csvText = sheet.rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v).join(",")).join("\n");
+  const label = { xlsx: "Excel 活頁簿", xls: "Excel 97-2003 活頁簿", html: "網頁格式的 Excel 檔" }[sheet.format];
+  return importTable(name, table, `${label}${sheet.sheet ? `・工作表「${sheet.sheet}」` : ""}`, auto, [], csvText);
 }
 
 /* PDF：先還原成表格，再走同一套對應與匯入流程 */
@@ -214,7 +227,7 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
   const link = hhrLink(state.persons, state.files);
   const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
-    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（本人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（被查詢人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
 }
 
 /* 欄位對應視窗 */
@@ -456,7 +469,7 @@ function renderFileList() {
   for (const f of state.files) {
     const a = state.persons.find(p => f.anchor && normUid(p.uid) === f.anchor);
     const li = document.createElement("li");
-    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（本人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
+    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（被查詢人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
     ul.appendChild(li);
   }
   box.appendChild(ul);
@@ -520,7 +533,7 @@ function enginePersons() {
     deathTime: (p.deathTime || "").trim(), fetus: p.fetus || "",
     marriageEnd: parseDate(p.marriageEndRaw), _marriageEndRaw: (p.marriageEndRaw || "").trim(),
     father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
-    fatherName: p.fatherName || "", motherName: p.motherName || "",
+    fatherName: p.fatherName || "", motherName: p.motherName || "", changeNotes: p.changeNotes || [],
     renounced: renouncedOf(p), lost_right: p.lost_right,
   }));
 }
