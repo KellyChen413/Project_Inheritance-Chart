@@ -550,14 +550,7 @@ function compute() {
   out.replaceChildren();
   state.last = { fam, result, items };
   const notes = caseNotes(fam, result, items);
-  const wrap = mkEl("div", "chart-wrap");
-  const remarkExtra = {};
-  for (const it of items) {
-    const c = checkOf(it);
-    if (c.status === "yes" && (c.court || c.caseNo)) remarkExtra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
-    if (c.status === "claimed") remarkExtra[it.pid] = "（已聲明拋棄，待核實法院文件）";
-  }
-  wrap.appendChild(drawChart(fam, result, { note: notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "", remarkExtra }));
+  const wrap = eventCharts(fam, result, items, notes);
   const treeView = mkEl("div", "view-tree"), formView = mkEl("div", "view-form");
   treeView.append(wrap, renouncePanel(fam, result, items, pending), shareTable(fam, result, items), rulesSection(fam, result), stepLog(fam, result));
   const fd = formData(fam, result, items, notes);
@@ -578,6 +571,69 @@ function compute() {
   out.append(tabs, treeView, formView);
   setView(state.view);
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = false;
+}
+
+/* ---------- 分次繼承系統表：每一次死亡（原繼承＋各層再轉繼承）各一張 ---------- */
+function inheritanceEvents(result) {
+  const out = [];
+  const walk = (res, scale, from) => {
+    out.push({ res, scale, from });
+    for (const s of res.shares) {
+      if (res.retransfers[s.id]) walk(res.retransfers[s.id], scale.mul(s.share), { parent: res.decedentId, share: s.share });
+    }
+  };
+  walk(result, new Frac(1), null);
+  return out;
+}
+function eventCharts(fam, result, items, notes) {
+  const events = inheritanceEvents(result);
+  const root = fam.p[result.decedentId];
+  const note = notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "";
+  const box = mkEl("div", "event-box");
+  const tabs = mkEl("div", "event-tabs no-print");
+  if (events.length > 1) {
+    tabs.appendChild(mkEl("span", "event-label", `本案共 ${events.length} 次繼承：`));
+    box.appendChild(tabs);
+  }
+  const charts = events.map((ev, i) => {
+    const did = ev.res.decedentId, dec = fam.p[did];
+    const extra = {};
+    for (const it of items.filter(x => x.target === did)) {
+      const c = checkOf(it);
+      if (c.status === "yes" && (c.court || c.caseNo)) extra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
+      if (c.status === "claimed") extra[it.pid] = "（已聲明拋棄，待核實法院文件）";
+    }
+    let chartFam = fam, opts = { note, remarkExtra: extra };
+    if (ev.from) {
+      // 再轉繼承：稱謂改以該次的被繼承人為準
+      const T = autoTitles(Object.values(fam.p), did);
+      chartFam = new Family(Object.values(fam.p).map(p => ({ ...p, title: T[p.id] || "" })));
+      const parent = fam.p[ev.from.parent];
+      opts = { ...opts, title: "繼承系統表（再轉繼承）", scale: ev.scale, scaleName: root.name,
+        scope: `第 ${i + 1} 次繼承：${dec.name}於${roc(dec.death)}死亡，就其自${parent.name}遺產取得之應繼分 ${ev.from.share}` +
+          (ev.from.parent !== root.id ? `（占${root.name}遺產 ${ev.scale}）` : "") + `，由其繼承人再轉繼承。方塊中藍字為占${root.name}遺產之比例。` };
+    } else if (events.length > 1) {
+      opts = { ...opts, scope: `第 1 次繼承：${root.name}於${roc(root.death)}死亡。其後有 ${events.length - 1} 位繼承人於遺產分割前死亡，另見後續各張再轉繼承系統表。` };
+    }
+    const wrap = mkEl("div", "chart-wrap event-chart");
+    wrap.dataset.ev = String(i);
+    wrap.appendChild(drawChart(chartFam, ev.res, opts));
+    if (events.length > 1) {
+      const b = mkEl("button", "", `${"①②③④⑤⑥⑦⑧⑨⑩"[i] || i + 1} ${dec.name}（${isoToRoc(dec.death)}歿）${ev.from ? "・再轉繼承" : "・原繼承"}`);
+      b.type = "button"; b.dataset.ev = String(i);
+      b.addEventListener("click", () => showEvent(i));
+      tabs.appendChild(b);
+    }
+    return wrap;
+  });
+  const showEvent = i => {
+    state.eventIdx = i;
+    charts.forEach((c, k) => c.classList.toggle("inactive", k !== i));
+    for (const b of tabs.querySelectorAll("button")) b.classList.toggle("active", b.dataset.ev === String(i));
+  };
+  box.append(...charts);
+  showEvent(Math.min(state.eventIdx || 0, charts.length - 1));
+  return box;
 }
 
 /* 案件尚未確定的原因（樹狀圖、表格式、Excel 共用） */
@@ -877,6 +933,13 @@ function init() {
     showMessages([]); renderTable(); schedule();
   });
   $("#btn-demo").addEventListener("click", demoStep);
+  $("#btn-sample3").addEventListener("click", async () => {
+    if (hasData() && !await askConfirm("載入三代綜合案例會取代目前的資料，確定嗎？")) return;
+    loadData(JSON.parse($("#sample-3gen").textContent));
+    state.eventIdx = 0; state.view = "tree";
+    showMessages([{ cls: "info", title: "三代綜合案例（虛構）：陳國華死亡後，長女陳美玲已先死亡（由其子女代位）、次女陳美珍拋棄繼承（其子女不代位）、次男陳志豪於遺產分割前死亡（再轉繼承，其女陳思妤僅拋棄再轉部分）。請在下方「繼承系統表」切換第 1、第 2 次繼承。" }]);
+    renderTable(); schedule();
+  });
   $("#btn-clear").addEventListener("click", async () => {
     if (!hasData() || !await askConfirm("確定清除全部資料？此動作無法復原。")) return;
     resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
@@ -893,7 +956,7 @@ function init() {
   $("#btn-xlsx").addEventListener("click", exportXlsx);
   $("#chk-uid").addEventListener("change", e => { state.showFullUid = e.target.checked; compute(); });
   $("#btn-svg").addEventListener("click", () => {
-    const svg = document.querySelector(".chart-wrap svg"); if (!svg) return;
+    const svg = document.querySelector(".view-tree .event-chart:not(.inactive) svg") || document.querySelector(".chart-wrap svg"); if (!svg) return;
     const dec = byId(state.decedent);
     download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), safeName("繼承系統表", "svg"));
   });
