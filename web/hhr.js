@@ -12,25 +12,74 @@ const { parseDate: hhrDate } = typeof parseDate === "function" ? { parseDate } :
 const { parseCsvText: hhrCsv } = typeof parseCsvText === "function" ? { parseCsvText } : require("./csv.js");
 
 const HHR_FIELDS = [
-  { key: "relation",   label: "稱謂（相對於本人）", kinds: ["kin"], required: ["kin"],
-    syn: ["稱謂", "關係", "親屬關係", "與本人關係", "親等關係", "稱謂關係", "與查詢人關係"] },
-  { key: "name",       label: "姓名", kinds: ["kin", "personal"], required: ["kin", "personal"],
+  { key: "relation",   label: "稱謂（相對於本人／戶長）", kinds: ["kin", "household"], required: ["kin", "household"],
+    syn: ["稱謂", "關係", "親屬關係", "與本人關係", "親等關係", "稱謂關係", "與查詢人關係", "與戶長關係", "稱謂(與戶長關係)"] },
+  { key: "name",       label: "姓名", kinds: ["kin", "personal", "household"], required: ["kin", "personal", "household"],
     syn: ["姓名", "名字", "本人姓名", "親屬姓名"] },
-  { key: "uid",        label: "統一編號", kinds: ["kin", "personal"], required: ["kin", "personal"],
+  { key: "uid",        label: "統一編號", kinds: ["kin", "personal", "household"], required: ["kin", "personal"],
     syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "身分證統號", "本人統一編號", "本人統號", "親屬統一編號"] },
-  { key: "gender",     label: "性別", kinds: ["kin", "personal"], syn: ["性別"] },
-  { key: "birth",      label: "出生日期", kinds: ["kin", "personal"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
-  { key: "death",      label: "死亡日期", kinds: ["kin", "personal"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
-  { key: "fatherName", label: "父姓名", kinds: ["kin", "personal"], syn: ["父姓名", "父親姓名", "父", "父親"] },
-  { key: "motherName", label: "母姓名", kinds: ["kin", "personal"], syn: ["母姓名", "母親姓名", "母", "母親"] },
-  { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal"], syn: ["配偶姓名", "配偶", "配偶名"] },
-  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
-  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
-  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
-  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
-  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
-  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
+  { key: "gender",     label: "性別", kinds: ["kin", "personal", "household"], syn: ["性別"] },
+  { key: "birth",      label: "出生日期", kinds: ["kin", "personal", "household"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
+  { key: "death",      label: "死亡日期", kinds: ["kin", "personal", "household"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
+  { key: "fatherName", label: "父姓名", kinds: ["kin", "personal", "household"], syn: ["父姓名", "父親姓名", "父", "父親"] },
+  { key: "motherName", label: "母姓名", kinds: ["kin", "personal", "household"], syn: ["母姓名", "母親姓名", "母", "母親"] },
+  { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal", "household"], syn: ["配偶姓名", "配偶", "配偶名"] },
+  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal", "household"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
+  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal", "household"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
+  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal", "household"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal", "household"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
+  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal", "household"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
+  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal", "household"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
+  { key: "marriageEnd", label: "離婚／婚姻終止日期", kinds: ["household"], syn: ["離婚日期", "婚姻終止日期", "離婚年月日"] },
+  { key: "memo",       label: "記事", kinds: ["household"], syn: ["記事", "戶籍記事", "記事欄", "個人記事"] },
 ];
+
+/* ---------- 戶籍謄本「記事」欄解析 ----------
+ * 新式（電腦列印）謄本的記事為「民國○年○月○日＋事件」的文字，例如：
+ *   民國109年06月01日死亡　民國109年06月05日申請登記
+ *   民國090年03月15日更改姓名　原名：王淑華
+ *   民國098年05月20日與張建國結婚
+ *   民國105年01月10日與張建國兩願離婚
+ * 回傳抽出的事件；看不懂的句子原文保留，由人工判斷
+ */
+const MEMO_DATE = "(?:民國)?\\s*(\\d{1,3})\\s*年\\s*(\\d{1,2})\\s*月\\s*(\\d{1,2})\\s*日";
+function memoNorm(t) {
+  return String(t || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\r/g, "");
+}
+function parseMemo(text) {
+  const t = memoNorm(text);
+  const out = { death: "", deathDeclared: false, oldNames: [], marriages: [], divorces: [], adoption: false, notes: [] };
+  if (!t.trim()) return out;
+  const roc = (y, m, d) => `${+y}/${+m}/${+d}`;
+  const NAME = "([\\u4e00-\\u9fff]{2,5}?)";
+  // 死亡宣告：以判決所定的死亡時間為準
+  if (/死亡宣告|宣告死亡/.test(t)) {
+    out.deathDeclared = true;
+    const pm = t.match(new RegExp(`死亡(?:之)?(?:時間|日期|時)[為：:\\s]*${MEMO_DATE}`));
+    if (pm) out.death = roc(pm[1], pm[2], pm[3]);
+  }
+  // 依「民國○年○月○日」切成一句一事件（申請登記、戶政事務所等附註併在同一句）
+  const parts = t.split(/(?<![\d國])(?=(?:民國)?\s*\d{1,3}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)/).map(x => x.trim()).filter(Boolean);
+  for (const part of parts) {
+    const m = part.match(new RegExp(`^${MEMO_DATE}([\\s\\S]*)$`));
+    if (!m) continue;
+    const date = roc(m[1], m[2], m[3]), rest = m[4].replace(/[\s　]+/g, "");
+    if (!rest || /^(申請登記|登記)/.test(rest)) continue;                       // 只是登記日期
+    if (/死亡宣告|宣告死亡/.test(rest)) { out.notes.push(`${date} ${rest}`); continue; }
+    if (/^推定死亡|^死亡(之)?(時間|日期)/.test(rest)) continue;
+    if (/^(?:(?:於|在)[^，,。]{1,20}?)?死亡/.test(rest)) { if (!out.death) out.death = date; continue; }
+    let x;
+    if ((x = rest.match(new RegExp(`(?:原名|原姓名|舊名)[：:為]?${NAME}(?:[，,。\\s]|$|民國)`))) || (x = rest.match(new RegExp(`(?:原名|原姓名|舊名)[：:為]?([\\u4e00-\\u9fff]{2,5})`)))) { out.oldNames.push(x[1]); continue; }
+    if ((x = rest.match(new RegExp(`與${NAME}(?:登記)?結婚`)))) { out.marriages.push({ date, name: x[1] }); continue; }
+    if ((x = rest.match(new RegExp(`與${NAME}(?:兩願|判決|調解|和解|協議)?離婚`)))) { out.divorces.push({ date, name: x[1] }); continue; }
+    if (/收養/.test(rest)) { out.adoption = true; out.notes.push(`${date} ${rest}`); continue; }
+    if (/(遷入|遷出|住址變更|門牌|整編|出生登記|初設戶籍|職業|教育|役別|口卡|換發|補發|戶長變更|出生$|更改姓名$|改名$|更名$)/.test(rest)) continue;
+    out.notes.push(`${date} ${rest}`);
+  }
+  // 沒有日期開頭、但寫了「原名」的情形
+  for (const x of t.matchAll(new RegExp(`(?:原名|原姓名|舊名)[：:為\\s]*([\\u4e00-\\u9fff]{2,5})`, "g"))) if (!out.oldNames.some(n => x[1].startsWith(n))) out.oldNames.push(x[1]);
+  return out;
+}
 /* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
 const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
 
@@ -58,7 +107,7 @@ const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
 
 /* 稱謂分類（相對於本人） */
 const REL = {
-  self:    /^(本人|自己|查詢人|當事人)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
+  self:    /^(本人|自己|查詢人|當事人|戶長)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
   father:  /^(父|父親|養父)$/,
   mother:  /^(母|母親|養母)$/,
   spouse:  /^(配偶|夫|妻|丈夫|妻子|先生|太太)$/,
@@ -111,9 +160,10 @@ function hhrGuessMapping(headers) {
   return map;
 }
 
-/* 判斷檔案種類：kin 親等關聯、personal 個人戶籍、simple 本系統 CSV 格式 */
+/* 判斷檔案種類：kin 親等關聯、household 戶籍謄本（有記事欄）、personal 個人戶籍、simple 本系統 CSV 格式 */
 function hhrGuessKind(headers) {
   const m = hhrGuessMapping(headers);
+  if ("memo" in m && "relation" in m) return "household";
   if ("uid" in m && "relation" in m) return "kin";
   if ("uid" in m) return "personal";
   return "simple";
@@ -156,13 +206,46 @@ function hhrParse(table, mapping, kind) {
     else if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
     if (rec.nameNote === "*") warnings.push(`第 ${line} 列（${name}）姓名變更註記為「*」：曾變更姓名，但匯出檔未載明舊名；子女資料中的父母姓名若對不上，請調閱個人戶籍資料確認舊名`);
     else if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
-    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
+    // 謄本記事：抽出死亡、更名、結婚、離婚；與欄位已填的資料不同時以欄位為準並提示
+    const memo = get("memo");
+    rec.memo = memo; rec.marriageEnd = get("marriageEnd");
+    if (memo) {
+      const ev = parseMemo(memo);
+      const at = `第 ${line} 列（${name}）記事`;
+      if (ev.death) {
+        if (!rec.death) rec.death = ev.death;
+        else if (hhrDate(rec.death) !== hhrDate(ev.death)) warnings.push(`${at}的死亡日期（${ev.death}）與死亡日期欄（${rec.death}）不同，以欄位為準，請確認`);
+      }
+      if (ev.deathDeclared) warnings.push(`${at}有死亡宣告：死亡日期應為判決所定的死亡時間${ev.death ? `（已讀到 ${ev.death}）` : "，記事中未讀到，請人工填寫"}，請確認`);
+      for (const n of ev.oldNames) if (n !== name && !rec.nameAliases.includes(n)) rec.nameAliases.push(n);
+      if (ev.oldNames.length && !rec.nameNote) rec.nameNote = `原名${ev.oldNames.join("、")}`;
+      const lastMar = ev.marriages[ev.marriages.length - 1];
+      if (lastMar) {
+        if (!rec.spouseName) rec.spouseName = lastMar.name;
+        if (!rec.marriageDate && rec.spouseName === lastMar.name) rec.marriageDate = lastMar.date;
+      }
+      const div = ev.divorces.find(d => !rec.spouseName || d.name === rec.spouseName);
+      if (div && !rec.marriageEnd && !ev.marriages.some(m => m.name === div.name && hhrDate(m.date) > hhrDate(div.date))) {
+        rec.marriageEnd = div.date;
+        warnings.push(`${at}：已與${div.name}離婚（${div.date}），該配偶對離婚後開始的繼承無繼承權`);
+      }
+      if (ev.marriages.length + ev.divorces.length > 1) warnings.push(`${at}有多次結婚或離婚紀錄，本系統只處理一段婚姻，請確認配偶欄填的是繼承開始時的配偶`);
+      if (ev.adoption) warnings.push(`${at}有收養紀錄（${ev.notes.filter(x => /收養/.test(x)).join("；")}），請確認父、母欄填的是養父母或本生父母；被收養者對本生父母無繼承權`);
+      const other = ev.notes.filter(x => !/收養|死亡宣告/.test(x));
+      if (other.length) warnings.push(`${at}有其他事項，請人工確認是否影響繼承：${other.join("；")}`);
+    }
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"], ["marriageEnd", "離婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
     records.push(rec);
   });
 
   let anchorUid = null;
+  if (kind === "household") {
+    const head = records.find(r => /^戶長$/.test(r.relation)) || records.find(r => REL.self.test(r.relation));
+    if (!head) errors.push("找不到稱謂為「戶長」的人，無法判斷戶內其他人與戶長的關係");
+    else anchorUid = head.uid;
+  }
   if (kind === "kin") {
     const selves = records.filter(r => REL.self.test(r.relation));
     if (!selves.length) errors.push("找不到稱謂為「自己」（或「本人」）的列，無法判斷其他人與被查詢人的關係");
@@ -182,7 +265,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
   const conflicts = [];
   let added = 0, updated = 0;
   const LABEL = { name: "姓名", gender: "性別", birthRaw: "出生日期", deathRaw: "死亡日期",
-    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期" };
+    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期", marriageEndRaw: "離婚日期" };
   const same = (a, b) => (hhrDate(a) || a) === (hhrDate(b) || b);
   const keysOf = x => [normUid(x.uid), x.mergeKey, ...(x.uidAliases || [])].filter(Boolean);
   for (const rec of parsed.records) {
@@ -204,7 +287,8 @@ function hhrMerge(persons, parsed, fileName, makeId) {
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
       fatherName: rec.fatherName, motherName: rec.motherName, spouseName: rec.spouseName,
-      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate) };
+      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate),
+      marriageEndRaw: rocOf(rec.marriageEnd || "") };
     let changed = false;
     for (const [k, v] of Object.entries(incoming)) {
       if (!v) continue;
@@ -265,7 +349,7 @@ function hhrLink(persons, files) {
   inferGender();
 
   // 2. 親等關聯資料：依稱謂與本人的關係
-  for (const f of files.filter(f => f.kind === "kin")) {
+  for (const f of files.filter(f => f.kind === "kin" || f.kind === "household")) {
     const A = byUid[f.anchor];
     if (!A) continue;
     for (const { uid, relation } of f.rels) {
@@ -322,4 +406,4 @@ function hhrLink(persons, files) {
   return { warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, noteValue, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, noteValue, parseMemo, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };

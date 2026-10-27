@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 安全政策：禁止載入或連線到任何外部位址；以雜湊值只允許本檔案內既有的程式與樣式執行（由 web/build.py 產生時自動計算） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-uBLgVhGVTxTje//QkMppFcVd1PKCGGpg2yGlPBLszjo='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-XQlP89bZLJZeF8u1a2nKGFr763FZJ7iFFa7Gzr5n1Dk='; style-src 'sha256-FqRcHoW6VaApqY5oYJC6noenMUAGPmSbBl3i0GScRKs='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>繼承系統表產生器</title>
@@ -311,12 +311,30 @@ table#people { border-collapse: separate; border-spacing: 0; width: 100%; min-wi
 .fs-sign span:first-child { border-bottom: none; }
 
 /* ---------- 對話框 ---------- */
-dialog#map-dialog, dialog#confirm-dialog {
+dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog {
   border: 1px solid var(--line-2); border-radius: 20px; padding: 28px 32px;
   width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto;
   background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg);
 }
 dialog#confirm-dialog { width: min(440px, calc(100vw - 32px)); }
+dialog#tx-dialog { width: min(1000px, calc(100vw - 32px)); }
+.tx-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-bottom: 14px; }
+.tx-person { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 12px; background: var(--surface-2); }
+.tx-person.head { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.tx-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 600; font-size: 13.5px; }
+.tx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 8px 10px; }
+.tx-grid label, .tx-meta label, .tx-memo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.tx-grid input, .tx-meta input, .tx-memo textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 7px 9px; min-width: 0;
+}
+.tx-grid input:focus, .tx-meta input:focus, .tx-memo textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.tx-memo { margin-top: 10px; }
+.tx-memo textarea { min-height: 54px; resize: vertical; width: 100%; box-sizing: border-box; }
+.tx-parsed { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12.5px; min-height: 4px; }
+.tx-parsed span { padding: 2px 10px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.tx-parsed span.warn { background: var(--warn-soft); color: var(--warn); }
+.tx-parsed span.muted { background: transparent; color: var(--muted); padding-left: 0; }
 dialog::backdrop { background: rgb(18 20 24 / .5); backdrop-filter: blur(3px); }
 dialog[open] { animation: dlg-in .22s var(--ease); }
 @keyframes dlg-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -365,7 +383,7 @@ footer.note {
   .followups .txt { flex-basis: calc(100% - 70px); }
   .form-sheet { padding: 20px 14px; border-radius: var(--r-sm); }
   .fs-title { font-size: 21px; letter-spacing: .25em; }
-  dialog#map-dialog, dialog#confirm-dialog { padding: 20px 18px; border-radius: 16px; }
+  dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog { padding: 20px 18px; border-radius: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -428,6 +446,8 @@ footer.note {
       <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
       <li><b>拋棄繼承查證：</b>系統表下方列出需查證的人，至法院家事事件公告查詢後登錄結果、法院與案號。查證結果分為「查無拋棄」「已聲明拋棄（待核實）」「已拋棄（已核實）」；已聲明者先納入計算，但標示待核實文件。尚未查證完成前，系統表會標示「尚非最終結果」。</li>
       <li>日期可輸入民國（例：114/3/10）或西元（例：2025-03-10）。</li>
+      <li><b>謄本輸入（紙本戶籍謄本）：</b>按「謄本輸入」，一份謄本輸入一次。稱謂填「與戶長的關係」，戶長本人填「戶長」。記事欄照抄或貼上即可，系統會自動抓出<b>死亡</b>（含死亡宣告的推定死亡日）、<b>更名</b>（原名列入父母姓名比對）、<b>結婚、離婚</b>，下方即時顯示解析結果；收養、多次婚姻或看不懂的記事會提醒人工確認。謄本的資料與戶役政匯入的資料以統一編號合併、互相補足。謄本不等於二親等資料，戶長不會被當成「已調閱」。</li>
+      <li><b>適用法律時點：</b>本系統只實作現行民法。被繼承人於<b>民國34年10月25日前</b>（日據時期）死亡者，繼承依當時臺灣習慣判斷，系統不產生應繼分；<b>民國74年6月5日</b>民法繼承編修正施行前開始的繼承，會提醒部分規定不同（例如養子女應繼分），請人工確認。這類舊案多半只有手抄或日據時期謄本，仍可用「謄本輸入」建檔。</li>
       <li><b>Excel 匯入：</b>直接選擇戶役政匯出的 .xlsx 或 .xls，不必先另存為 CSV。系統讀取第一張工作表，表頭上方的標題列會自動略過。Excel 把 0370512 顯示成 370512（前面的 0 被去掉）也能正確辨識；儲存格若是 Excel 日期格式，會自動換算。讀取全程在瀏覽器內完成，不使用任何外掛或網路。有密碼保護的檔案請先移除密碼。</li>
       <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
@@ -451,6 +471,7 @@ footer.note {
       <label class="inline">被繼承人 <select id="decedent"></select></label>
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn-import" title="戶籍資料 Excel、PDF 或 CSV（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
+      <button type="button" id="btn-transcript" title="依紙本戶籍謄本（新式電腦列印）逐人輸入，記事欄自動解析">謄本輸入</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
       <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
@@ -490,6 +511,7 @@ footer.note {
 <footer class="note">本工具依現行民法自動判斷，結果僅供參考，正式文件請以承辦人核對為準。</footer>
 
 <dialog id="map-dialog"></dialog>
+<dialog id="tx-dialog"></dialog>
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">{"_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。", "decedent": "P01", "persons": [{"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10", "father": "P90", "mother": "P91", "spouse": "P02"}, {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"}, {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"}, {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"}, {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"}, {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"}, {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01", "father": "P01", "mother": "P02", "spouse": "P30"}, {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"}, {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"}, {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"}, {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05", "father": "P01", "mother": "P02", "renounced": ["P01"]}, {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"}, {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01", "father": "P01", "mother": "P02", "spouse": "P31"}, {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"}, {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}]}</script>
 <script type="application/json" id="sample-3gen">{"_說明": "三代綜合案例（全部虛構）：代位繼承、再轉繼承、拋棄繼承（含僅拋棄再轉部分）", "decedent": "X", "queried": ["X", "C2", "C3", "C4"], "persons": [{"id": "X", "name": "陳國華", "gender": "M", "birth": "1945-04-02", "death": "2025-03-10", "spouse": "W", "uid": "A000001001"}, {"id": "W", "name": "林秀蘭", "gender": "F", "birth": "1948-06-15", "uid": "A000001002", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C1", "name": "陳志明", "gender": "M", "birth": "1970-01-12", "father": "X", "mother": "W", "uid": "A000001011", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C2", "name": "陳志豪", "gender": "M", "birth": "1973-05-20", "death": "2025-08-01", "father": "X", "mother": "W", "spouse": "C2W", "uid": "A000001012"}, {"id": "C2W", "name": "吳雅芳", "gender": "F", "birth": "1975-02-03", "uid": "A000001021", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G1", "name": "陳柏翰", "gender": "M", "birth": "2000-03-03", "father": "C2", "mother": "C2W", "uid": "A000001031", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G2", "name": "陳思妤", "gender": "F", "birth": "2003-07-07", "father": "C2", "mother": "C2W", "uid": "A000001032", "renounceChecks": {"C2": {"status": "yes", "court": "臺灣新北地方法院", "caseNo": "114年度司繼字第987號", "checkedOn": "114/10/20"}}}, {"id": "C3", "name": "陳美玲", "gender": "F", "birth": "1976-09-09", "death": "2016-04-01", "father": "X", "mother": "W", "spouse": "C3H", "uid": "A000001013"}, {"id": "C3H", "name": "黃建宏", "gender": "M", "birth": "1974-12-24", "uid": "A000001022"}, {"id": "G3", "name": "黃子軒", "gender": "M", "birth": "2001-01-01", "father": "C3H", "mother": "C3", "uid": "A000001033", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "G4", "name": "黃子涵", "gender": "F", "birth": "2004-02-02", "father": "C3H", "mother": "C3", "uid": "A000001034", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C4", "name": "陳美珍", "gender": "F", "birth": "1979-11-11", "father": "X", "mother": "W", "uid": "A000001014", "renounceChecks": {"X": {"status": "yes", "court": "臺灣臺北地方法院", "caseNo": "114年度司繼字第321號", "checkedOn": "114/6/2"}}}, {"id": "G5", "name": "李小美", "gender": "F", "birth": "2008-08-08", "mother": "C4", "uid": "A000001035"}]}</script>
@@ -573,6 +595,21 @@ const ONE = new Frac(1), ZERO = new Frac(0);
 
 /* 規則版本：離線工具長期使用時，用來確認適用的規則是否需要更新 */
 const RULE_VERSION = "現行民法繼承編（規則版本 2026.10.27）";
+
+/* 適用法律的時點檢查：本系統只實作現行民法
+ * - 民國34年10月25日前開始之繼承：依日據時期臺灣之習慣（如戶主繼承），本系統不計算
+ * - 民國74年6月5日民法繼承編修正施行前開始之繼承：部分規定不同（如養子女應繼分），提醒人工確認
+ */
+const REGIME_JAPANESE_END = "1945-10-25";
+const REGIME_1985 = "1985-06-05";
+function legalRegime(deathIso) {
+  if (!deathIso) return { code: "unknown" };
+  if (deathIso < REGIME_JAPANESE_END) return { code: "japanese", block: true,
+    text: "繼承開始於民國34年10月25日前（日據時期），應依當時臺灣之習慣判斷繼承人（例如戶主繼承、家產繼承），與現行民法不同。本系統不計算應繼分，請人工判斷。" };
+  if (deathIso < REGIME_1985) return { code: "pre1985",
+    text: "繼承開始於民國74年6月5日民法繼承編修正施行前，部分規定與現行法不同（例如當時養子女之應繼分為婚生子女之二分之一）。若案件涉及收養等情形，請人工確認；本系統依現行法計算。" };
+  return { code: "current" };
+}
 
 /* ---------- 日期 ---------- */
 // 接受西元 2025-03-10 / 2025/3/10，或民國 114/3/10、114.3.10、114-3-10
@@ -1086,7 +1123,7 @@ function validate(persons, decedentId) {
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
-// module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE };
+// module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime };
 
 /* ============================================================
  * 繼承系統表 SVG 樹狀圖（自製排版，不依賴任何外部套件）
@@ -1553,25 +1590,74 @@ const { parseDate: hhrDate } = typeof parseDate === "function" ? { parseDate } :
 const { parseCsvText: hhrCsv } = typeof parseCsvText === "function" ? { parseCsvText } : require("./csv.js");
 
 const HHR_FIELDS = [
-  { key: "relation",   label: "稱謂（相對於本人）", kinds: ["kin"], required: ["kin"],
-    syn: ["稱謂", "關係", "親屬關係", "與本人關係", "親等關係", "稱謂關係", "與查詢人關係"] },
-  { key: "name",       label: "姓名", kinds: ["kin", "personal"], required: ["kin", "personal"],
+  { key: "relation",   label: "稱謂（相對於本人／戶長）", kinds: ["kin", "household"], required: ["kin", "household"],
+    syn: ["稱謂", "關係", "親屬關係", "與本人關係", "親等關係", "稱謂關係", "與查詢人關係", "與戶長關係", "稱謂(與戶長關係)"] },
+  { key: "name",       label: "姓名", kinds: ["kin", "personal", "household"], required: ["kin", "personal", "household"],
     syn: ["姓名", "名字", "本人姓名", "親屬姓名"] },
-  { key: "uid",        label: "統一編號", kinds: ["kin", "personal"], required: ["kin", "personal"],
+  { key: "uid",        label: "統一編號", kinds: ["kin", "personal", "household"], required: ["kin", "personal"],
     syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "身分證統號", "本人統一編號", "本人統號", "親屬統一編號"] },
-  { key: "gender",     label: "性別", kinds: ["kin", "personal"], syn: ["性別"] },
-  { key: "birth",      label: "出生日期", kinds: ["kin", "personal"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
-  { key: "death",      label: "死亡日期", kinds: ["kin", "personal"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
-  { key: "fatherName", label: "父姓名", kinds: ["kin", "personal"], syn: ["父姓名", "父親姓名", "父", "父親"] },
-  { key: "motherName", label: "母姓名", kinds: ["kin", "personal"], syn: ["母姓名", "母親姓名", "母", "母親"] },
-  { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal"], syn: ["配偶姓名", "配偶", "配偶名"] },
-  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
-  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
-  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
-  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
-  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
-  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
+  { key: "gender",     label: "性別", kinds: ["kin", "personal", "household"], syn: ["性別"] },
+  { key: "birth",      label: "出生日期", kinds: ["kin", "personal", "household"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
+  { key: "death",      label: "死亡日期", kinds: ["kin", "personal", "household"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
+  { key: "fatherName", label: "父姓名", kinds: ["kin", "personal", "household"], syn: ["父姓名", "父親姓名", "父", "父親"] },
+  { key: "motherName", label: "母姓名", kinds: ["kin", "personal", "household"], syn: ["母姓名", "母親姓名", "母", "母親"] },
+  { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal", "household"], syn: ["配偶姓名", "配偶", "配偶名"] },
+  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal", "household"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
+  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal", "household"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
+  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal", "household"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal", "household"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
+  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal", "household"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
+  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal", "household"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
+  { key: "marriageEnd", label: "離婚／婚姻終止日期", kinds: ["household"], syn: ["離婚日期", "婚姻終止日期", "離婚年月日"] },
+  { key: "memo",       label: "記事", kinds: ["household"], syn: ["記事", "戶籍記事", "記事欄", "個人記事"] },
 ];
+
+/* ---------- 戶籍謄本「記事」欄解析 ----------
+ * 新式（電腦列印）謄本的記事為「民國○年○月○日＋事件」的文字，例如：
+ *   民國109年06月01日死亡　民國109年06月05日申請登記
+ *   民國090年03月15日更改姓名　原名：王淑華
+ *   民國098年05月20日與張建國結婚
+ *   民國105年01月10日與張建國兩願離婚
+ * 回傳抽出的事件；看不懂的句子原文保留，由人工判斷
+ */
+const MEMO_DATE = "(?:民國)?\\s*(\\d{1,3})\\s*年\\s*(\\d{1,2})\\s*月\\s*(\\d{1,2})\\s*日";
+function memoNorm(t) {
+  return String(t || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\r/g, "");
+}
+function parseMemo(text) {
+  const t = memoNorm(text);
+  const out = { death: "", deathDeclared: false, oldNames: [], marriages: [], divorces: [], adoption: false, notes: [] };
+  if (!t.trim()) return out;
+  const roc = (y, m, d) => `${+y}/${+m}/${+d}`;
+  const NAME = "([\\u4e00-\\u9fff]{2,5}?)";
+  // 死亡宣告：以判決所定的死亡時間為準
+  if (/死亡宣告|宣告死亡/.test(t)) {
+    out.deathDeclared = true;
+    const pm = t.match(new RegExp(`死亡(?:之)?(?:時間|日期|時)[為：:\\s]*${MEMO_DATE}`));
+    if (pm) out.death = roc(pm[1], pm[2], pm[3]);
+  }
+  // 依「民國○年○月○日」切成一句一事件（申請登記、戶政事務所等附註併在同一句）
+  const parts = t.split(/(?<![\d國])(?=(?:民國)?\s*\d{1,3}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)/).map(x => x.trim()).filter(Boolean);
+  for (const part of parts) {
+    const m = part.match(new RegExp(`^${MEMO_DATE}([\\s\\S]*)$`));
+    if (!m) continue;
+    const date = roc(m[1], m[2], m[3]), rest = m[4].replace(/[\s　]+/g, "");
+    if (!rest || /^(申請登記|登記)/.test(rest)) continue;                       // 只是登記日期
+    if (/死亡宣告|宣告死亡/.test(rest)) { out.notes.push(`${date} ${rest}`); continue; }
+    if (/^推定死亡|^死亡(之)?(時間|日期)/.test(rest)) continue;
+    if (/^(?:(?:於|在)[^，,。]{1,20}?)?死亡/.test(rest)) { if (!out.death) out.death = date; continue; }
+    let x;
+    if ((x = rest.match(new RegExp(`(?:原名|原姓名|舊名)[：:為]?${NAME}(?:[，,。\\s]|$|民國)`))) || (x = rest.match(new RegExp(`(?:原名|原姓名|舊名)[：:為]?([\\u4e00-\\u9fff]{2,5})`)))) { out.oldNames.push(x[1]); continue; }
+    if ((x = rest.match(new RegExp(`與${NAME}(?:登記)?結婚`)))) { out.marriages.push({ date, name: x[1] }); continue; }
+    if ((x = rest.match(new RegExp(`與${NAME}(?:兩願|判決|調解|和解|協議)?離婚`)))) { out.divorces.push({ date, name: x[1] }); continue; }
+    if (/收養/.test(rest)) { out.adoption = true; out.notes.push(`${date} ${rest}`); continue; }
+    if (/(遷入|遷出|住址變更|門牌|整編|出生登記|初設戶籍|職業|教育|役別|口卡|換發|補發|戶長變更|出生$|更改姓名$|改名$|更名$)/.test(rest)) continue;
+    out.notes.push(`${date} ${rest}`);
+  }
+  // 沒有日期開頭、但寫了「原名」的情形
+  for (const x of t.matchAll(new RegExp(`(?:原名|原姓名|舊名)[：:為\\s]*([\\u4e00-\\u9fff]{2,5})`, "g"))) if (!out.oldNames.some(n => x[1].startsWith(n))) out.oldNames.push(x[1]);
+  return out;
+}
 /* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
 const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
 
@@ -1599,7 +1685,7 @@ const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
 
 /* 稱謂分類（相對於本人） */
 const REL = {
-  self:    /^(本人|自己|查詢人|當事人)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
+  self:    /^(本人|自己|查詢人|當事人|戶長)$/,      // 戶役政二親等匯出檔中，被查詢人的稱謂為「自己」
   father:  /^(父|父親|養父)$/,
   mother:  /^(母|母親|養母)$/,
   spouse:  /^(配偶|夫|妻|丈夫|妻子|先生|太太)$/,
@@ -1652,9 +1738,10 @@ function hhrGuessMapping(headers) {
   return map;
 }
 
-/* 判斷檔案種類：kin 親等關聯、personal 個人戶籍、simple 本系統 CSV 格式 */
+/* 判斷檔案種類：kin 親等關聯、household 戶籍謄本（有記事欄）、personal 個人戶籍、simple 本系統 CSV 格式 */
 function hhrGuessKind(headers) {
   const m = hhrGuessMapping(headers);
+  if ("memo" in m && "relation" in m) return "household";
   if ("uid" in m && "relation" in m) return "kin";
   if ("uid" in m) return "personal";
   return "simple";
@@ -1697,13 +1784,46 @@ function hhrParse(table, mapping, kind) {
     else if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
     if (rec.nameNote === "*") warnings.push(`第 ${line} 列（${name}）姓名變更註記為「*」：曾變更姓名，但匯出檔未載明舊名；子女資料中的父母姓名若對不上，請調閱個人戶籍資料確認舊名`);
     else if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
-    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
+    // 謄本記事：抽出死亡、更名、結婚、離婚；與欄位已填的資料不同時以欄位為準並提示
+    const memo = get("memo");
+    rec.memo = memo; rec.marriageEnd = get("marriageEnd");
+    if (memo) {
+      const ev = parseMemo(memo);
+      const at = `第 ${line} 列（${name}）記事`;
+      if (ev.death) {
+        if (!rec.death) rec.death = ev.death;
+        else if (hhrDate(rec.death) !== hhrDate(ev.death)) warnings.push(`${at}的死亡日期（${ev.death}）與死亡日期欄（${rec.death}）不同，以欄位為準，請確認`);
+      }
+      if (ev.deathDeclared) warnings.push(`${at}有死亡宣告：死亡日期應為判決所定的死亡時間${ev.death ? `（已讀到 ${ev.death}）` : "，記事中未讀到，請人工填寫"}，請確認`);
+      for (const n of ev.oldNames) if (n !== name && !rec.nameAliases.includes(n)) rec.nameAliases.push(n);
+      if (ev.oldNames.length && !rec.nameNote) rec.nameNote = `原名${ev.oldNames.join("、")}`;
+      const lastMar = ev.marriages[ev.marriages.length - 1];
+      if (lastMar) {
+        if (!rec.spouseName) rec.spouseName = lastMar.name;
+        if (!rec.marriageDate && rec.spouseName === lastMar.name) rec.marriageDate = lastMar.date;
+      }
+      const div = ev.divorces.find(d => !rec.spouseName || d.name === rec.spouseName);
+      if (div && !rec.marriageEnd && !ev.marriages.some(m => m.name === div.name && hhrDate(m.date) > hhrDate(div.date))) {
+        rec.marriageEnd = div.date;
+        warnings.push(`${at}：已與${div.name}離婚（${div.date}），該配偶對離婚後開始的繼承無繼承權`);
+      }
+      if (ev.marriages.length + ev.divorces.length > 1) warnings.push(`${at}有多次結婚或離婚紀錄，本系統只處理一段婚姻，請確認配偶欄填的是繼承開始時的配偶`);
+      if (ev.adoption) warnings.push(`${at}有收養紀錄（${ev.notes.filter(x => /收養/.test(x)).join("；")}），請確認父、母欄填的是養父母或本生父母；被收養者對本生父母無繼承權`);
+      const other = ev.notes.filter(x => !/收養|死亡宣告/.test(x));
+      if (other.length) warnings.push(`${at}有其他事項，請人工確認是否影響繼承：${other.join("；")}`);
+    }
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"], ["marriageEnd", "離婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
     records.push(rec);
   });
 
   let anchorUid = null;
+  if (kind === "household") {
+    const head = records.find(r => /^戶長$/.test(r.relation)) || records.find(r => REL.self.test(r.relation));
+    if (!head) errors.push("找不到稱謂為「戶長」的人，無法判斷戶內其他人與戶長的關係");
+    else anchorUid = head.uid;
+  }
   if (kind === "kin") {
     const selves = records.filter(r => REL.self.test(r.relation));
     if (!selves.length) errors.push("找不到稱謂為「自己」（或「本人」）的列，無法判斷其他人與被查詢人的關係");
@@ -1723,7 +1843,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
   const conflicts = [];
   let added = 0, updated = 0;
   const LABEL = { name: "姓名", gender: "性別", birthRaw: "出生日期", deathRaw: "死亡日期",
-    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期" };
+    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期", marriageEndRaw: "離婚日期" };
   const same = (a, b) => (hhrDate(a) || a) === (hhrDate(b) || b);
   const keysOf = x => [normUid(x.uid), x.mergeKey, ...(x.uidAliases || [])].filter(Boolean);
   for (const rec of parsed.records) {
@@ -1745,7 +1865,8 @@ function hhrMerge(persons, parsed, fileName, makeId) {
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
       fatherName: rec.fatherName, motherName: rec.motherName, spouseName: rec.spouseName,
-      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate) };
+      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate),
+      marriageEndRaw: rocOf(rec.marriageEnd || "") };
     let changed = false;
     for (const [k, v] of Object.entries(incoming)) {
       if (!v) continue;
@@ -1806,7 +1927,7 @@ function hhrLink(persons, files) {
   inferGender();
 
   // 2. 親等關聯資料：依稱謂與本人的關係
-  for (const f of files.filter(f => f.kind === "kin")) {
+  for (const f of files.filter(f => f.kind === "kin" || f.kind === "household")) {
     const A = byUid[f.anchor];
     if (!A) continue;
     for (const { uid, relation } of f.rels) {
@@ -1863,7 +1984,7 @@ function hhrLink(persons, files) {
   return { warnings: [...new Set(warnings)] };
 }
 
-// module.exports = { HHR_IGNORED, changeAliases, noteValue, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+// module.exports = { HHR_IGNORED, changeAliases, noteValue, parseMemo, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
 
 /* ============================================================
  * 承辦作業輔助
@@ -2605,7 +2726,7 @@ async function pdfReadTable(data, opts = {}) {
 
 const state = { persons: [], decedent: "", seq: 1, queried: new Set(), files: [], demoStep: 0, view: "tree", showFullUid: false };
 const $ = sel => document.querySelector(sel);
-const KIND_LABEL = { kin: "親等關聯資料", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
+const KIND_LABEL = { kin: "親等關聯資料", household: "戶籍謄本", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
 const STATUS_LABEL = { "": "未查證", none: "查無拋棄", claimed: "已聲明拋棄（待核實）", yes: "已拋棄（已核實）" };
 const FETUS_LABEL = { "": "（非胎兒）", pending: "胎兒・待出生", live: "胎兒・已活產", stillbirth: "胎兒・死產" };
 // 拋棄繼承：已核實與已聲明都納入計算；已聲明者標示待核實
@@ -2790,11 +2911,12 @@ async function importPdf(name, buf, auto) {
   return importTable(name, table, `PDF ${table.meta.pages} 頁・${how}`, auto, table.meta.notes, null);
 }
 
-async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
+async function importTable(name, table, sourceLabel, auto, extraNotes, text, forced) {
   const isPdf = text === null;
   let kind = hhrGuessKind(table.headers), mapping = hhrGuessMapping(table.headers);
   const mem = loadRemembered(table.headers);
   if (mem) ({ kind, mapping } = mem);
+  if (forced) ({ kind, mapping } = forced);
   if (isPdf && kind === "simple") kind = "personal";
   if (!auto) {
     const r = await openMapDialog(name, sourceLabel, table, kind, mapping, !isPdf);
@@ -2817,16 +2939,124 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
   state.files.push({ name, kind, anchor: parsed.anchorUid, count: parsed.records.length, at: todayRoc(),
     rels: parsed.records.map(r => ({ uid: r.uid, relation: r.relation })) });
   let anchorName = "";
-  if (kind === "kin") {
-    const a = state.persons.find(p => normUid(p.uid) === parsed.anchorUid);
-    state.queried.add(a.id);
-    anchorName = a.name;
-    if (!state.decedent) state.decedent = a.id;
+  const anchor = state.persons.find(p => normUid(p.uid) === parsed.anchorUid || p.mergeKey === parsed.anchorUid);
+  if (kind === "kin" && anchor) {
+    state.queried.add(anchor.id);
+    anchorName = `被查詢人：${anchor.name}`;
+    if (!state.decedent) state.decedent = anchor.id;
   }
+  if (kind === "household" && anchor) anchorName = `戶長：${anchor.name}`;
   const link = hhrLink(state.persons, state.files);
   const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
-    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（被查詢人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+}
+
+/* ---------- 謄本輸入：紙本戶籍謄本（新式電腦列印）逐人輸入 ----------
+ * 稱謂相對於戶長；記事欄即時解析（死亡、更名、結婚、離婚、收養）
+ * 輸入的資料只存在本視窗的變數中，按「匯入」後併入案件，與其他資料以統一編號合併
+ */
+const TX_FIELDS = [
+  ["relation", "稱謂（與戶長關係）", "例：戶長、妻、長男"], ["name", "姓名", ""], ["uid", "統一編號", "無則留空"],
+  ["birth", "出生日期", "例：0370512"], ["fatherName", "父姓名", ""], ["motherName", "母姓名", ""], ["spouseName", "配偶姓名", ""],
+];
+let txCount = 0;
+function txParsedChips(box, memo) {
+  box.replaceChildren();
+  if (!memo.trim()) return;
+  const ev = parseMemo(memo);
+  const chip = (t, cls = "") => box.appendChild(mkEl("span", cls, t));
+  if (ev.death) chip(`死亡 ${ev.death}${ev.deathDeclared ? "（死亡宣告）" : ""}`);
+  else if (ev.deathDeclared) chip("死亡宣告：未讀到死亡日期", "warn");
+  for (const n of ev.oldNames) chip(`原名 ${n}`);
+  for (const m of ev.marriages) chip(`${m.date} 與${m.name}結婚`);
+  for (const d of ev.divorces) chip(`${d.date} 與${d.name}離婚`, "warn");
+  if (ev.adoption) chip("有收養紀錄，請確認父母欄", "warn");
+  for (const n of ev.notes.filter(x => !/收養|死亡宣告/.test(x))) chip(`未判讀：${n}`, "warn");
+  if (!box.children.length) chip("記事中沒有影響繼承的事項", "muted");
+}
+function openTranscriptDialog() {
+  const dlg = $("#tx-dialog");
+  dlg.replaceChildren();
+  const rows = [];
+  dlg.appendChild(mkEl("h3", "", "謄本輸入（紙本戶籍謄本）"));
+  dlg.appendChild(mkEl("p", "muted", "一份謄本輸入一次。稱謂填與戶長的關係，戶長本人填「戶長」。記事欄照抄或貼上，系統會即時解析死亡、更名、結婚、離婚；藍色為已判讀，橘色請人工確認。輸入內容只存在本頁記憶體中。"));
+  const meta = mkEl("div", "tx-meta");
+  const nameLab = mkEl("label", "", "這份謄本的名稱");
+  const nameIn = mkEl("input"); nameIn.value = `戶籍謄本 ${++txCount}`; nameIn.autocomplete = "off";
+  nameLab.appendChild(nameIn); meta.appendChild(nameLab);
+  dlg.appendChild(meta);
+  const list = mkEl("div");
+  dlg.appendChild(list);
+  const err = mkEl("div", "map-error");
+  const addBtn = mkEl("button", "", "＋ 新增一人"); addBtn.type = "button";
+  const actions = mkEl("div", "map-actions");
+  const cancel = mkEl("button", "", "取消"); cancel.type = "button";
+  const ok = mkEl("button", "primary", "匯入此份謄本"); ok.type = "button";
+  actions.append(addBtn, cancel, ok);
+  dlg.append(err, actions);
+
+  const relabel = () => [...list.children].forEach((card, i) => {
+    const r = rows[i];
+    card.classList.toggle("head", /^戶長$/.test(r.relation.trim()));
+    card.querySelector(".tx-no").textContent = `第 ${i + 1} 人${/^戶長$/.test(r.relation.trim()) ? "・戶長" : ""}`;
+  });
+  function addRow(init = {}) {
+    const r = { relation: "", name: "", uid: "", birth: "", fatherName: "", motherName: "", spouseName: "", memo: "", ...init };
+    rows.push(r);
+    const card = mkEl("div", "tx-person");
+    const top = mkEl("div", "tx-top");
+    top.appendChild(mkEl("span", "tx-no", ""));
+    const del = mkEl("button", "", "刪除"); del.type = "button";
+    del.addEventListener("click", () => { const i = [...list.children].indexOf(card); rows.splice(i, 1); card.remove(); relabel(); });
+    top.appendChild(del);
+    card.appendChild(top);
+    const grid = mkEl("div", "tx-grid");
+    for (const [k, label, ph] of TX_FIELDS) {
+      const lab = mkEl("label", "", label);
+      const inp = mkEl("input"); inp.value = r[k]; inp.placeholder = ph; inp.autocomplete = "off"; inp.spellcheck = false;
+      if (k === "uid") inp.className = "uid";
+      inp.addEventListener("input", () => { r[k] = inp.value; if (k === "relation") relabel(); });
+      lab.appendChild(inp); grid.appendChild(lab);
+    }
+    card.appendChild(grid);
+    const memoLab = mkEl("label", "tx-memo", "記事（照抄或貼上）");
+    const ta = mkEl("textarea"); ta.value = r.memo; ta.placeholder = "例：民國109年06月01日死亡　民國109年06月05日申請登記"; ta.spellcheck = false;
+    const chips = mkEl("div", "tx-parsed");
+    ta.addEventListener("input", () => { r.memo = ta.value; txParsedChips(chips, ta.value); });
+    memoLab.appendChild(ta);
+    card.append(memoLab, chips);
+    txParsedChips(chips, r.memo);
+    list.appendChild(card);
+    relabel();
+    return card;
+  }
+  addRow({ relation: "戶長" });
+  addBtn.addEventListener("click", () => { const c = addRow(); c.querySelector("input").focus(); });
+
+  const done = () => { dlg.close(); dlg.replaceChildren(); rows.length = 0; };
+  cancel.addEventListener("click", done);
+  dlg.addEventListener("cancel", e => { e.preventDefault(); done(); }, { once: true });
+  ok.addEventListener("click", async () => {
+    const filled = rows.filter(r => Object.values(r).some(v => String(v).trim()));
+    const problems = [];
+    if (!filled.length) problems.push("尚未輸入任何人");
+    if (filled.some(r => !r.name.trim())) problems.push("有人沒有填姓名");
+    if (!filled.some(r => /^戶長$/.test(r.relation.trim()))) problems.push("請把戶長的稱謂填為「戶長」");
+    if (filled.some(r => !r.relation.trim())) problems.push("有人沒有填稱謂");
+    if (problems.length) { err.textContent = problems.join("；"); return; }
+    const headers = ["稱謂", "姓名", "統一編號", "出生日期", "父姓名", "母姓名", "配偶姓名", "記事"];
+    const keys = ["relation", "name", "uid", "birth", "fatherName", "motherName", "spouseName", "memo"];
+    const table = { headers, body: filled.map(r => keys.map(k => String(r[k]).trim())), headerRow: 0 };
+    const mapping = Object.fromEntries(keys.map((k, i) => [k, i]));
+    const fileName = nameIn.value.trim() || `戶籍謄本 ${txCount}`;
+    done();
+    const block = await importTable(fileName, table, "手動輸入", true, [], null, { kind: "household", mapping });
+    showMessages([block]);
+    renderTable(); schedule();
+  });
+  dlg.showModal();
+  list.querySelector("input").focus();
 }
 
 /* 欄位對應視窗 */
@@ -2841,11 +3071,11 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
     dlg.appendChild(mk("p", "muted", `${sourceLabel}・${table.body.length} 列資料・偵測到 ${table.headers.length} 個欄位。請確認檔案種類與欄位對應${allowSimple ? "" : "，並核對預覽內容與 PDF 是否一致"}。`));
 
     const kindRow = mk("div", "kind-row");
-    for (const k of allowSimple ? ["kin", "personal", "simple"] : ["kin", "personal"]) {
+    for (const k of allowSimple ? ["kin", "household", "personal", "simple"] : ["kin", "household", "personal"]) {
       const lab = mk("label");
       const r = mk("input"); r.type = "radio"; r.name = "kind"; r.value = k; r.checked = k === kind;
       r.addEventListener("change", () => { kind = k; render(); });
-      lab.append(r, document.createTextNode(" " + { kin: "親等關聯資料（二、三親等）", personal: "個人戶籍資料", simple: "本系統 CSV 格式（取代目前資料）" }[k]));
+      lab.append(r, document.createTextNode(" " + { kin: "親等關聯資料（二、三親等）", household: "戶籍謄本（稱謂相對於戶長，有記事欄）", personal: "個人戶籍資料", simple: "本系統 CSV 格式（取代目前資料）" }[k]));
       kindRow.appendChild(lab);
     }
     dlg.appendChild(kindRow);
@@ -2895,7 +3125,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
         body.appendChild(mk("h4", "", "預覽（前 3 筆）"));
         const pv = mk("table", "map-table preview");
         const ph = pv.createTHead().insertRow();
-        prevFields.forEach(f => ph.appendChild(mk("th", "", f.label.replace("（相對於本人）", ""))));
+        prevFields.forEach(f => ph.appendChild(mk("th", "", f.label.replace(/（相對於.*?）/, ""))));
         const pb = pv.createTBody();
         for (const row of sample) {
           const r = pb.insertRow();
@@ -3066,9 +3296,9 @@ function renderFileList() {
   const h = document.createElement("strong"); h.textContent = `已匯入 ${state.files.length} 份戶籍資料：`; box.appendChild(h);
   const ul = document.createElement("ul");
   for (const f of state.files) {
-    const a = state.persons.find(p => f.anchor && normUid(p.uid) === f.anchor);
+    const a = state.persons.find(p => f.anchor && (normUid(p.uid) === f.anchor || p.mergeKey === f.anchor));
     const li = document.createElement("li");
-    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（被查詢人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
+    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（${f.kind === "household" ? "戶長" : "被查詢人"}：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
     ul.appendChild(li);
   }
   box.appendChild(ul);
@@ -3150,16 +3380,29 @@ function compute() {
     const ul = mkEl("ul"); for (const t of items) ul.appendChild(mkEl("li", "", t));
     d.appendChild(ul); msg.appendChild(d);
   };
+  // 適用法律時點：日據時期的繼承不計算；74年修法前提醒
+  const decP = persons.find(p => p.id === state.decedent);
+  const regime = legalRegime(decP && decP.death);
+  if (regime.block) {
+    $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
+    state.last = null;
+    box("error", `${decP.name}的繼承適用日據時期習慣，本系統不產生系統表`, [regime.text, "人員資料仍可建檔、匯出案件檔，供人工判斷時參考。"]);
+    out.replaceChildren(mkEl("p", "placeholder", "本案不適用現行民法的計算，請人工判斷。"));
+    return;
+  }
   box("error", `有 ${errors.length} 項資料需要修正，修正後才會產生系統表`, errors);
   box("warn", "請確認", warnings);
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
   if (errors.length) { out.replaceChildren(mkEl("p", "placeholder", "資料修正完成後，系統表會自動顯示在這裡。")); return; }
+
 
   const fam = new Family(persons.map(p => ({ ...p, birth: p.birth || null, death: p.death || null, marriageEnd: p.marriageEnd || null })));
   let result;
   try { result = new InheritanceEngine(fam).distribute(state.decedent); }
   catch (e) { box("error", "計算時發生問題", [e.message]); return; }
 
+  const oldLaw = inheritanceEvents(result).map(ev => fam.p[ev.res.decedentId]).filter(d => legalRegime(d.death).code === "pre1985");
+  if (oldLaw.length) box("warn", "適用法律提醒", [`${oldLaw.map(d => `${d.name}（${roc(d.death)}死亡）`).join("、")}：${legalRegime(oldLaw[0].death).text}`]);
   const items = renounceItemsWithRecords(fam, result);
   const pending = items.filter(x => isUnverified(checkOf(x).status)).length;
   const follow = followUps(fam, result, state.queried);
@@ -3564,6 +3807,7 @@ function init() {
     resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
   });
   $("#btn-import").addEventListener("click", () => $("#file").click());
+  $("#btn-transcript").addEventListener("click", openTranscriptDialog);
   $("#file").addEventListener("change", e => {
     const files = [...e.target.files]; e.target.value = "";
     if (files.length) importFiles(files);

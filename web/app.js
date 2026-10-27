@@ -6,7 +6,7 @@
 
 const state = { persons: [], decedent: "", seq: 1, queried: new Set(), files: [], demoStep: 0, view: "tree", showFullUid: false };
 const $ = sel => document.querySelector(sel);
-const KIND_LABEL = { kin: "親等關聯資料", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
+const KIND_LABEL = { kin: "親等關聯資料", household: "戶籍謄本", personal: "個人戶籍資料", simple: "本系統 CSV 格式" };
 const STATUS_LABEL = { "": "未查證", none: "查無拋棄", claimed: "已聲明拋棄（待核實）", yes: "已拋棄（已核實）" };
 const FETUS_LABEL = { "": "（非胎兒）", pending: "胎兒・待出生", live: "胎兒・已活產", stillbirth: "胎兒・死產" };
 // 拋棄繼承：已核實與已聲明都納入計算；已聲明者標示待核實
@@ -191,11 +191,12 @@ async function importPdf(name, buf, auto) {
   return importTable(name, table, `PDF ${table.meta.pages} 頁・${how}`, auto, table.meta.notes, null);
 }
 
-async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
+async function importTable(name, table, sourceLabel, auto, extraNotes, text, forced) {
   const isPdf = text === null;
   let kind = hhrGuessKind(table.headers), mapping = hhrGuessMapping(table.headers);
   const mem = loadRemembered(table.headers);
   if (mem) ({ kind, mapping } = mem);
+  if (forced) ({ kind, mapping } = forced);
   if (isPdf && kind === "simple") kind = "personal";
   if (!auto) {
     const r = await openMapDialog(name, sourceLabel, table, kind, mapping, !isPdf);
@@ -218,16 +219,124 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text) {
   state.files.push({ name, kind, anchor: parsed.anchorUid, count: parsed.records.length, at: todayRoc(),
     rels: parsed.records.map(r => ({ uid: r.uid, relation: r.relation })) });
   let anchorName = "";
-  if (kind === "kin") {
-    const a = state.persons.find(p => normUid(p.uid) === parsed.anchorUid);
-    state.queried.add(a.id);
-    anchorName = a.name;
-    if (!state.decedent) state.decedent = a.id;
+  const anchor = state.persons.find(p => normUid(p.uid) === parsed.anchorUid || p.mergeKey === parsed.anchorUid);
+  if (kind === "kin" && anchor) {
+    state.queried.add(anchor.id);
+    anchorName = `被查詢人：${anchor.name}`;
+    if (!state.decedent) state.decedent = anchor.id;
   }
+  if (kind === "household" && anchor) anchorName = `戶長：${anchor.name}`;
   const link = hhrLink(state.persons, state.files);
   const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
-    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（被查詢人：${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+    title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
+}
+
+/* ---------- 謄本輸入：紙本戶籍謄本（新式電腦列印）逐人輸入 ----------
+ * 稱謂相對於戶長；記事欄即時解析（死亡、更名、結婚、離婚、收養）
+ * 輸入的資料只存在本視窗的變數中，按「匯入」後併入案件，與其他資料以統一編號合併
+ */
+const TX_FIELDS = [
+  ["relation", "稱謂（與戶長關係）", "例：戶長、妻、長男"], ["name", "姓名", ""], ["uid", "統一編號", "無則留空"],
+  ["birth", "出生日期", "例：0370512"], ["fatherName", "父姓名", ""], ["motherName", "母姓名", ""], ["spouseName", "配偶姓名", ""],
+];
+let txCount = 0;
+function txParsedChips(box, memo) {
+  box.replaceChildren();
+  if (!memo.trim()) return;
+  const ev = parseMemo(memo);
+  const chip = (t, cls = "") => box.appendChild(mkEl("span", cls, t));
+  if (ev.death) chip(`死亡 ${ev.death}${ev.deathDeclared ? "（死亡宣告）" : ""}`);
+  else if (ev.deathDeclared) chip("死亡宣告：未讀到死亡日期", "warn");
+  for (const n of ev.oldNames) chip(`原名 ${n}`);
+  for (const m of ev.marriages) chip(`${m.date} 與${m.name}結婚`);
+  for (const d of ev.divorces) chip(`${d.date} 與${d.name}離婚`, "warn");
+  if (ev.adoption) chip("有收養紀錄，請確認父母欄", "warn");
+  for (const n of ev.notes.filter(x => !/收養|死亡宣告/.test(x))) chip(`未判讀：${n}`, "warn");
+  if (!box.children.length) chip("記事中沒有影響繼承的事項", "muted");
+}
+function openTranscriptDialog() {
+  const dlg = $("#tx-dialog");
+  dlg.replaceChildren();
+  const rows = [];
+  dlg.appendChild(mkEl("h3", "", "謄本輸入（紙本戶籍謄本）"));
+  dlg.appendChild(mkEl("p", "muted", "一份謄本輸入一次。稱謂填與戶長的關係，戶長本人填「戶長」。記事欄照抄或貼上，系統會即時解析死亡、更名、結婚、離婚；藍色為已判讀，橘色請人工確認。輸入內容只存在本頁記憶體中。"));
+  const meta = mkEl("div", "tx-meta");
+  const nameLab = mkEl("label", "", "這份謄本的名稱");
+  const nameIn = mkEl("input"); nameIn.value = `戶籍謄本 ${++txCount}`; nameIn.autocomplete = "off";
+  nameLab.appendChild(nameIn); meta.appendChild(nameLab);
+  dlg.appendChild(meta);
+  const list = mkEl("div");
+  dlg.appendChild(list);
+  const err = mkEl("div", "map-error");
+  const addBtn = mkEl("button", "", "＋ 新增一人"); addBtn.type = "button";
+  const actions = mkEl("div", "map-actions");
+  const cancel = mkEl("button", "", "取消"); cancel.type = "button";
+  const ok = mkEl("button", "primary", "匯入此份謄本"); ok.type = "button";
+  actions.append(addBtn, cancel, ok);
+  dlg.append(err, actions);
+
+  const relabel = () => [...list.children].forEach((card, i) => {
+    const r = rows[i];
+    card.classList.toggle("head", /^戶長$/.test(r.relation.trim()));
+    card.querySelector(".tx-no").textContent = `第 ${i + 1} 人${/^戶長$/.test(r.relation.trim()) ? "・戶長" : ""}`;
+  });
+  function addRow(init = {}) {
+    const r = { relation: "", name: "", uid: "", birth: "", fatherName: "", motherName: "", spouseName: "", memo: "", ...init };
+    rows.push(r);
+    const card = mkEl("div", "tx-person");
+    const top = mkEl("div", "tx-top");
+    top.appendChild(mkEl("span", "tx-no", ""));
+    const del = mkEl("button", "", "刪除"); del.type = "button";
+    del.addEventListener("click", () => { const i = [...list.children].indexOf(card); rows.splice(i, 1); card.remove(); relabel(); });
+    top.appendChild(del);
+    card.appendChild(top);
+    const grid = mkEl("div", "tx-grid");
+    for (const [k, label, ph] of TX_FIELDS) {
+      const lab = mkEl("label", "", label);
+      const inp = mkEl("input"); inp.value = r[k]; inp.placeholder = ph; inp.autocomplete = "off"; inp.spellcheck = false;
+      if (k === "uid") inp.className = "uid";
+      inp.addEventListener("input", () => { r[k] = inp.value; if (k === "relation") relabel(); });
+      lab.appendChild(inp); grid.appendChild(lab);
+    }
+    card.appendChild(grid);
+    const memoLab = mkEl("label", "tx-memo", "記事（照抄或貼上）");
+    const ta = mkEl("textarea"); ta.value = r.memo; ta.placeholder = "例：民國109年06月01日死亡　民國109年06月05日申請登記"; ta.spellcheck = false;
+    const chips = mkEl("div", "tx-parsed");
+    ta.addEventListener("input", () => { r.memo = ta.value; txParsedChips(chips, ta.value); });
+    memoLab.appendChild(ta);
+    card.append(memoLab, chips);
+    txParsedChips(chips, r.memo);
+    list.appendChild(card);
+    relabel();
+    return card;
+  }
+  addRow({ relation: "戶長" });
+  addBtn.addEventListener("click", () => { const c = addRow(); c.querySelector("input").focus(); });
+
+  const done = () => { dlg.close(); dlg.replaceChildren(); rows.length = 0; };
+  cancel.addEventListener("click", done);
+  dlg.addEventListener("cancel", e => { e.preventDefault(); done(); }, { once: true });
+  ok.addEventListener("click", async () => {
+    const filled = rows.filter(r => Object.values(r).some(v => String(v).trim()));
+    const problems = [];
+    if (!filled.length) problems.push("尚未輸入任何人");
+    if (filled.some(r => !r.name.trim())) problems.push("有人沒有填姓名");
+    if (!filled.some(r => /^戶長$/.test(r.relation.trim()))) problems.push("請把戶長的稱謂填為「戶長」");
+    if (filled.some(r => !r.relation.trim())) problems.push("有人沒有填稱謂");
+    if (problems.length) { err.textContent = problems.join("；"); return; }
+    const headers = ["稱謂", "姓名", "統一編號", "出生日期", "父姓名", "母姓名", "配偶姓名", "記事"];
+    const keys = ["relation", "name", "uid", "birth", "fatherName", "motherName", "spouseName", "memo"];
+    const table = { headers, body: filled.map(r => keys.map(k => String(r[k]).trim())), headerRow: 0 };
+    const mapping = Object.fromEntries(keys.map((k, i) => [k, i]));
+    const fileName = nameIn.value.trim() || `戶籍謄本 ${txCount}`;
+    done();
+    const block = await importTable(fileName, table, "手動輸入", true, [], null, { kind: "household", mapping });
+    showMessages([block]);
+    renderTable(); schedule();
+  });
+  dlg.showModal();
+  list.querySelector("input").focus();
 }
 
 /* 欄位對應視窗 */
@@ -242,11 +351,11 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
     dlg.appendChild(mk("p", "muted", `${sourceLabel}・${table.body.length} 列資料・偵測到 ${table.headers.length} 個欄位。請確認檔案種類與欄位對應${allowSimple ? "" : "，並核對預覽內容與 PDF 是否一致"}。`));
 
     const kindRow = mk("div", "kind-row");
-    for (const k of allowSimple ? ["kin", "personal", "simple"] : ["kin", "personal"]) {
+    for (const k of allowSimple ? ["kin", "household", "personal", "simple"] : ["kin", "household", "personal"]) {
       const lab = mk("label");
       const r = mk("input"); r.type = "radio"; r.name = "kind"; r.value = k; r.checked = k === kind;
       r.addEventListener("change", () => { kind = k; render(); });
-      lab.append(r, document.createTextNode(" " + { kin: "親等關聯資料（二、三親等）", personal: "個人戶籍資料", simple: "本系統 CSV 格式（取代目前資料）" }[k]));
+      lab.append(r, document.createTextNode(" " + { kin: "親等關聯資料（二、三親等）", household: "戶籍謄本（稱謂相對於戶長，有記事欄）", personal: "個人戶籍資料", simple: "本系統 CSV 格式（取代目前資料）" }[k]));
       kindRow.appendChild(lab);
     }
     dlg.appendChild(kindRow);
@@ -296,7 +405,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
         body.appendChild(mk("h4", "", "預覽（前 3 筆）"));
         const pv = mk("table", "map-table preview");
         const ph = pv.createTHead().insertRow();
-        prevFields.forEach(f => ph.appendChild(mk("th", "", f.label.replace("（相對於本人）", ""))));
+        prevFields.forEach(f => ph.appendChild(mk("th", "", f.label.replace(/（相對於.*?）/, ""))));
         const pb = pv.createTBody();
         for (const row of sample) {
           const r = pb.insertRow();
@@ -467,9 +576,9 @@ function renderFileList() {
   const h = document.createElement("strong"); h.textContent = `已匯入 ${state.files.length} 份戶籍資料：`; box.appendChild(h);
   const ul = document.createElement("ul");
   for (const f of state.files) {
-    const a = state.persons.find(p => f.anchor && normUid(p.uid) === f.anchor);
+    const a = state.persons.find(p => f.anchor && (normUid(p.uid) === f.anchor || p.mergeKey === f.anchor));
     const li = document.createElement("li");
-    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（被查詢人：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
+    li.textContent = `${f.name}｜${KIND_LABEL[f.kind]}${a ? `（${f.kind === "household" ? "戶長" : "被查詢人"}：${a.name}）` : ""}｜${f.count} 筆｜${f.at || ""}匯入`;
     ul.appendChild(li);
   }
   box.appendChild(ul);
@@ -551,16 +660,29 @@ function compute() {
     const ul = mkEl("ul"); for (const t of items) ul.appendChild(mkEl("li", "", t));
     d.appendChild(ul); msg.appendChild(d);
   };
+  // 適用法律時點：日據時期的繼承不計算；74年修法前提醒
+  const decP = persons.find(p => p.id === state.decedent);
+  const regime = legalRegime(decP && decP.death);
+  if (regime.block) {
+    $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
+    state.last = null;
+    box("error", `${decP.name}的繼承適用日據時期習慣，本系統不產生系統表`, [regime.text, "人員資料仍可建檔、匯出案件檔，供人工判斷時參考。"]);
+    out.replaceChildren(mkEl("p", "placeholder", "本案不適用現行民法的計算，請人工判斷。"));
+    return;
+  }
   box("error", `有 ${errors.length} 項資料需要修正，修正後才會產生系統表`, errors);
   box("warn", "請確認", warnings);
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = true;
   if (errors.length) { out.replaceChildren(mkEl("p", "placeholder", "資料修正完成後，系統表會自動顯示在這裡。")); return; }
+
 
   const fam = new Family(persons.map(p => ({ ...p, birth: p.birth || null, death: p.death || null, marriageEnd: p.marriageEnd || null })));
   let result;
   try { result = new InheritanceEngine(fam).distribute(state.decedent); }
   catch (e) { box("error", "計算時發生問題", [e.message]); return; }
 
+  const oldLaw = inheritanceEvents(result).map(ev => fam.p[ev.res.decedentId]).filter(d => legalRegime(d.death).code === "pre1985");
+  if (oldLaw.length) box("warn", "適用法律提醒", [`${oldLaw.map(d => `${d.name}（${roc(d.death)}死亡）`).join("、")}：${legalRegime(oldLaw[0].death).text}`]);
   const items = renounceItemsWithRecords(fam, result);
   const pending = items.filter(x => isUnverified(checkOf(x).status)).length;
   const follow = followUps(fam, result, state.queried);
@@ -965,6 +1087,7 @@ function init() {
     resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
   });
   $("#btn-import").addEventListener("click", () => $("#file").click());
+  $("#btn-transcript").addEventListener("click", openTranscriptDialog);
   $("#file").addEventListener("change", e => {
     const files = [...e.target.files]; e.target.value = "";
     if (files.length) importFiles(files);
