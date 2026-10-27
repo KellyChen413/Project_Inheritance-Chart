@@ -420,11 +420,13 @@ footer.note {
       <li>本檔案為單一 HTML 檔，用 Edge 或 Chrome 直接開啟即可使用，不需安裝任何軟體，也不需要網路。</li>
       <li>檔案內設有安全政策，瀏覽器會封鎖任何對外連線；程式碼為純文字，可由資訊單位直接檢視。安全政策以「雜湊值」只允許本檔案內既有的程式與樣式執行，檔案若遭竄改或被插入其他程式碼，瀏覽器會拒絕執行。</li>
       <li>輸入的資料只存在本頁面的記憶體中，不會寫入硬碟或瀏覽器儲存空間，關閉分頁即清除。若需保存，請按「匯出案件檔」並依單位規定保管。全程不使用 localStorage、sessionStorage、IndexedDB 或 Cookie；欄位對應設定也只在本次開啟期間記住。</li>
-      <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 CSV，可一次選多份。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；親屬關係依「稱謂（相對於本人）」與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
+      <li><b>戶籍資料匯入（實務流程）：</b>按「匯入檔案」選擇從戶役政系統匯出的 <b>Excel（.xlsx／.xls）、PDF 或 CSV</b>，可一次選多份、混合不同格式。系統會判斷是「親等關聯資料」還是「個人戶籍資料」，並自動對應欄位，請確認後匯入。同一人出現在多份資料時，以<b>統一編號</b>合併；被查詢人的稱謂為「自己」（也接受「本人」），日期可為 0370512 這類民國 7 碼；親屬關係依「稱謂（相對於被查詢人）」、父母配偶統號與「父、母、配偶姓名」自動串聯；稱謂會依被繼承人重新換算。</li>
       <li><b>PDF 匯入：</b>可直接匯入戶政系統匯出的文字型 PDF（能用滑鼠選取文字者）。系統依文字位置還原表格，支援跨頁與儲存格換行；也能讀取「姓名：○○」這類表單格式。匯入前請在對應視窗核對預覽內容。掃描影像 PDF 沒有文字層，無法讀取。PDF 讀取元件（pdf.js）與中文字碼表已內嵌於本檔，不需連網。</li>
       <li><b>待調閱清單：</b>系統會判斷還需要調閱誰的資料，例如繼承開始前死亡且查無子女者、繼承開始後死亡（再轉繼承）者。調閱後查無資料，可按「已調閱／已確認」。</li>
       <li><b>拋棄繼承查證：</b>系統表下方列出需查證的人，至法院家事事件公告查詢後登錄結果、法院與案號。查證結果分為「查無拋棄」「已聲明拋棄（待核實）」「已拋棄（已核實）」；已聲明者先納入計算，但標示待核實文件。尚未查證完成前，系統表會標示「尚非最終結果」。</li>
       <li>日期可輸入民國（例：114/3/10）或西元（例：2025-03-10）。</li>
+      <li><b>Excel 匯入：</b>直接選擇戶役政匯出的 .xlsx 或 .xls，不必先另存為 CSV。系統讀取第一張工作表，表頭上方的標題列會自動略過。Excel 把 0370512 顯示成 370512（前面的 0 被去掉）也能正確辨識；儲存格若是 Excel 日期格式，會自動換算。讀取全程在瀏覽器內完成，不使用任何外掛或網路。有密碼保護的檔案請先移除密碼。</li>
+      <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
       <li><b>Excel 日期注意：</b>在 Excel 輸入「37/5/12」這類兩位數民國年，會被自動改成西元 1937 年。民國 100 年以前的日期請寫成「民國37年5月12日」或西元「1948/5/12」，或先將日期欄設為文字格式。</li>
       <li>「喪失」欄是指對目前選定之被繼承人喪失繼承權（第1145條）。拋棄繼承請在「拋棄繼承查證」登錄，含再轉部分的拋棄。</li>
@@ -445,7 +447,7 @@ footer.note {
     <div class="toolbar">
       <label class="inline">被繼承人 <select id="decedent"></select></label>
       <span class="spacer"></span>
-      <button type="button" class="primary" id="btn-import" title="戶籍資料 CSV 或 PDF（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
+      <button type="button" class="primary" id="btn-import" title="戶籍資料 Excel、PDF 或 CSV（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
       <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
@@ -453,7 +455,7 @@ footer.note {
       <button type="button" id="btn-export-csv" title="匯出為 CSV，可用 Excel 開啟">匯出 CSV</button>
       <button type="button" id="btn-export" title="匯出完整案件檔，含匯入紀錄與拋棄查證">匯出案件檔</button>
       <button type="button" class="danger" id="btn-clear">清除全部</button>
-      <input type="file" id="file" accept=".csv,.txt,.json,.pdf,text/csv,application/json,application/pdf" multiple hidden>
+      <input type="file" id="file" accept=".csv,.txt,.json,.pdf,.xlsx,.xls,text/csv,application/json,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple hidden>
     </div>
     <div id="import-messages"></div>
     <div id="file-list"></div>

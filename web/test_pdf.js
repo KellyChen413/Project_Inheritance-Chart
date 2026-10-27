@@ -17,7 +17,8 @@ const cases = {
     assert.strictEqual(t.meta.mode, "table");
     assert.strictEqual(t.meta.pages, 2);
     assert.deepStrictEqual(t.headers, ["稱謂", "姓名", "統一編號", "性別", "出生日期", "死亡日期", "父姓名", "母姓名", "配偶姓名"]);
-    assert.strictEqual(t.body.length, 12);
+    assert.strictEqual(t.body.length, 12);                          // 含無統一編號的王福來
+    assert.ok(t.body.some(r => r[1] === "王福來" && r[2] === ""));
     const wei = t.body.find(r => r[1] === "王志偉");
     assert.strictEqual(wei[8], "黃雅婷");                          // 換行合併
     assert.strictEqual(hhrGuessKind(t.headers), "kin");
@@ -25,6 +26,19 @@ const cases = {
     assert.deepStrictEqual(p.errors, []);
     assert.strictEqual(p.anchorUid, "A000000001");
     assert.strictEqual(p.records.find(r => r.name === "王小安").fatherName, "王志偉");
+  },
+  "戶役政實際 16 欄版面：兩行表頭、無統號列、變更註記 *，結果與 CSV 一致": async () => {
+    const t = await read("範例5_王大明_二親等資料_實際版面.pdf");
+    assert.strictEqual(t.meta.mode, "table");
+    assert.deepStrictEqual(t.meta.notes, []);
+    const { decodeBytes } = require("./csv.js");
+    const { hhrReadTable } = require("./hhr.js");
+    const csv = hhrReadTable(decodeBytes(fs.readFileSync(path.join(__dirname, "../data/範例1_王大明_二親等資料.csv"))).text);
+    assert.deepStrictEqual(t.headers, csv.headers);
+    assert.deepStrictEqual(t.body, csv.body.map(r => r.map(v => v.trim())));
+    const p = hhrParse(t, hhrGuessMapping(t.headers), hhrGuessKind(t.headers));
+    assert.deepStrictEqual(p.errors, []);
+    assert.strictEqual(p.anchorUid, "A000000001");
   },
   "LibreOffice 匯出的表格（內嵌字型）": async () => {
     const t = await read("範例2_王淑娟_二親等資料.pdf");

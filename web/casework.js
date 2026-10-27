@@ -96,6 +96,11 @@ function followUps(fam, result, queried) {
       if (!dec[rel] && dec[rel + "Name"]) add("必要", did, `無第一順序繼承人，需確認被繼承人之${label}${dec[rel + "Name"]}的存歿，但此人不在資料中。請調閱其個人戶籍資料。`);
     }
   }
+  // 變更註記為「*」：曾變更統號或姓名，但匯出檔未載明舊資料
+  for (const p of Object.values(fam.p)) {
+    const vague = (p.changeNotes || []).filter(t => t.includes("未載明"));
+    if (vague.length) add("建議", p.id, `${p.name}有${vague.map(t => t.split("：")[0]).join("、")}註記（匯出檔未載明舊資料）。若其他資料以舊名或舊統號記載此人，系統無法自動比對，請調閱個人戶籍資料確認，避免同一人被當成兩個人。`);
+  }
   return out;
 }
 
