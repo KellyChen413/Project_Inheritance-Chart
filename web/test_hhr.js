@@ -212,6 +212,18 @@ const cases = {
     assert.strictEqual(legalRegime("1985-06-04").code, "pre1985");
     assert.strictEqual(legalRegime("1985-06-05").code, "current");
   },
+  "自動辨識：戶役政實際欄位不需手動對應": () => {
+    const { hhrAutoCheck } = require("./hhr.js");
+    for (const f of ["範例1_王大明_二親等資料.csv", "範例2_王淑娟_二親等資料.csv", "範例3_王小平_個人戶籍資料.csv"]) {
+      const t = hhrReadTable(decodeBytes(fs.readFileSync(path.join(DATA, f))).text);
+      const kind = hhrGuessKind(t.headers);
+      const c = hhrAutoCheck(t.headers, hhrGuessMapping(t.headers), kind);
+      assert.ok(c.confident, f);
+      if (kind === "kin") assert.deepStrictEqual(c.unused, [], f);               // 16 欄全部用上（項目、查看略過）
+    }
+    const bad = hhrReadTable("名字欄,代碼\n甲,1");
+    assert.ok(!hhrAutoCheck(bad.headers, hhrGuessMapping(bad.headers), "kin").confident);
+  },
   "缺少自己／本人列 → 擋下": () => {
     const t = hhrReadTable("稱謂,姓名,統一編號\n父,甲,A000000001");
     assert.ok(hhrParse(t, hhrGuessMapping(t.headers), "kin").errors.some(e => e.includes("自己")));

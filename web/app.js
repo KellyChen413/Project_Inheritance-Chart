@@ -198,7 +198,16 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text, for
   if (mem) ({ kind, mapping } = mem);
   if (forced) ({ kind, mapping } = forced);
   if (isPdf && kind === "simple") kind = "personal";
-  if (!auto) {
+  // 自動辨識：必要欄位齊全就直接匯入；勾選「匯入前確認欄位」或辨識不完整時才跳出對應視窗
+  const check = hhrAutoCheck(table.headers, mapping, kind);
+  const autoNote = [];
+  const simpleOk = kind === "simple" && text && ["稱謂", "姓名"].every(h => table.headers.map(x => String(x).trim()).includes(h));
+  if (!auto && !state.confirmMapping && simpleOk && !forced) {
+    // 本系統 CSV 範本格式：直接辨識（取代資料前仍會確認）
+  } else if (!auto && !state.confirmMapping && check.confident && !forced) {
+    const skipped = table.headers.filter(h => HHR_IGNORED.includes(String(h).replace(/[\s　]/g, "")));
+    autoNote.push(`已自動辨識 ${check.used.length} 個欄位${skipped.length ? `，略過畫面操作欄（${skipped.join("、")}）` : ""}${check.unused.length ? `；未使用：${check.unused.join("、")}` : ""}。如需調整，請勾選「匯入前確認欄位」後重新匯入`);
+  } else if (!auto) {
     const r = await openMapDialog(name, sourceLabel, table, kind, mapping, !isPdf);
     if (!r) return { cls: "warn", title: `${name}：已取消匯入` };
     ({ kind, mapping } = r);
@@ -227,7 +236,7 @@ async function importTable(name, table, sourceLabel, auto, extraNotes, text, for
   }
   if (kind === "household" && anchor) anchorName = `戶長：${anchor.name}`;
   const link = hhrLink(state.persons, state.files);
-  const items = [...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
+  const items = [...autoNote, ...extraNotes, ...parsed.warnings, ...m.conflicts, ...link.warnings];
   return { cls: m.conflicts.length || link.warnings.length ? "warn" : "ok", items,
     title: `${name}：${KIND_LABEL[kind]}${anchorName ? `（${anchorName}）` : ""}，${parsed.records.length} 筆，新增 ${m.added} 人、補充 ${m.updated} 人（${sourceLabel}）` };
 }
@@ -1088,6 +1097,7 @@ function init() {
   });
   $("#btn-import").addEventListener("click", () => $("#file").click());
   $("#btn-transcript").addEventListener("click", openTranscriptDialog);
+  $("#chk-confirm-map").addEventListener("change", e => { state.confirmMapping = e.target.checked; });
   $("#file").addEventListener("change", e => {
     const files = [...e.target.files]; e.target.value = "";
     if (files.length) importFiles(files);

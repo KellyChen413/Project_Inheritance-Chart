@@ -169,6 +169,18 @@ function hhrGuessKind(headers) {
   return "simple";
 }
 
+/* 自動辨識是否可信：必要欄位都對應到、沒有重複對應 → 可直接匯入，不必跳出對應視窗 */
+function hhrAutoCheck(headers, mapping, kind) {
+  if (kind === "simple") return { confident: false, used: [], unused: [] };
+  const fields = HHR_FIELDS.filter(f => f.kinds.includes(kind));
+  const missing = fields.filter(f => (f.required || []).includes(kind) && !(f.key in mapping));
+  const idx = Object.values(mapping);
+  const dup = idx.some((v, i) => idx.indexOf(v) !== i);
+  const used = fields.filter(f => f.key in mapping).map(f => `${headers[mapping[f.key]]}→${f.label.replace(/（.*?）/, "")}`);
+  const unused = headers.filter((h, i) => String(h).trim() && !idx.includes(i) && !HHR_IGNORED.includes(normHeader(h)));
+  return { confident: !missing.length && !dup, used, unused, missing: missing.map(f => f.label) };
+}
+
 /* ---------- 解析 ---------- */
 function hhrParse(table, mapping, kind) {
   const errors = [], warnings = [], records = [];
@@ -406,4 +418,4 @@ function hhrLink(persons, files) {
   return { warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, noteValue, parseMemo, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+if (typeof module !== "undefined") module.exports = { hhrAutoCheck, HHR_IGNORED, changeAliases, noteValue, parseMemo, HHR_FIELDS, hhrReadTable, hhrTableFromRows, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
