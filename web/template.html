@@ -314,6 +314,10 @@ dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog {
   background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg);
 }
 dialog#confirm-dialog { width: min(440px, calc(100vw - 32px)); }
+.lost-cell { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 150px; }
+.lost-cell select { font-size: 13px; }
+.lost-cell .forgive { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lost-cell .forgive[hidden] { display: none; }
 dialog#tx-dialog { width: min(1000px, calc(100vw - 32px)); }
 .tx-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-bottom: 14px; }
 .tx-person { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 12px; background: var(--surface-2); }
@@ -449,7 +453,7 @@ footer.note {
       <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
       <li><b>Excel 日期注意：</b>在 Excel 輸入「37/5/12」這類兩位數民國年，會被自動改成西元 1937 年。民國 100 年以前的日期請寫成「民國37年5月12日」或西元「1948/5/12」，或先將日期欄設為文字格式。</li>
-      <li>「喪失」欄是指對目前選定之被繼承人喪失繼承權（第1145條）。拋棄繼承請在「拋棄繼承查證」登錄，含再轉部分的拋棄。</li>
+      <li><b>喪失繼承權（民法第1145條）：</b>在「喪失繼承權」欄選擇事由款別：第1款故意致被繼承人或應繼承人於死（或未致死但受刑之宣告）、第2款詐欺脅迫使為或撤回變更遺囑、第3款詐欺脅迫妨害遺囑、第4款偽造變造隱匿湮滅遺囑、第5款重大虐待侮辱且經被繼承人表示不得繼承。第2至4款可勾選「經宥恕」，繼承權不喪失（第1145條第2項）；第1款、第5款不適用宥恕。喪失繼承權者，其直系血親卑親屬得代位繼承（第1140條），配偶不得代位；系統表備註會寫出款別。此欄指對目前選定之被繼承人；拋棄繼承請在「拋棄繼承查證」登錄。CSV 的「喪失」欄可填「是」或「第1款」「第3款，經宥恕」。</li>
       <li><b>資安設計：</b>不使用 localStorage、sessionStorage、IndexedDB 或 Cookie；輸入框關閉瀏覽器自動填入紀錄；離開或重新整理頁面時主動清空記憶體中的資料；畫面一律以 textContent 輸出文字，不使用 innerHTML，防範 XSS；下載檔名只含日期、不含姓名，避免下載資料夾的檔案列表洩漏個資。</li>
       <li><b>胎兒：</b>繼承開始時已受胎、尚未出生者，在出生日期下方將胎兒狀態設為「待出生」，系統依民法第7條、第1166條保留其應繼分，並標示本表尚非最終結果；出生後改為「已活產」並填出生日期；死產者設為「死產」，系統會重新計算。</li>
       <li><b>同日死亡：</b>繼承人與被繼承人同日死亡時，可在死亡日期下方填寫時間（24 小時制）判斷先後；未填時依民法第11條推定同時死亡，並列為待確認事項。同時死亡者的子女仍得代位繼承（通說）。</li>
@@ -485,7 +489,7 @@ footer.note {
       <table id="people">
         <colgroup><col><col class="c-title"><col class="c-name"><col class="c-uid"><col class="c-g"><col class="c-date"><col class="c-date">
           <col class="c-rel"><col class="c-rel"><col class="c-rel"><col class="c-chk"><col class="c-del"></colgroup>
-        <thead><tr><th></th><th>稱謂（對被繼承人）</th><th>姓名</th><th>統一編號</th><th>性別</th><th>出生日期</th><th>死亡日期</th><th>父</th><th>母</th><th>配偶</th><th>喪失</th><th></th></tr></thead>
+        <thead><tr><th></th><th>稱謂（對被繼承人）</th><th>姓名</th><th>統一編號</th><th>性別</th><th>出生日期</th><th>死亡日期</th><th>父</th><th>母</th><th>配偶</th><th title="民法第1145條">喪失繼承權</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>

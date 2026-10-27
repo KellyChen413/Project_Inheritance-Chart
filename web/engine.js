@@ -32,6 +32,25 @@ const ONE = new Frac(1), ZERO = new Frac(0);
 /* 規則版本：離線工具長期使用時，用來確認適用的規則是否需要更新 */
 const RULE_VERSION = "現行民法繼承編（規則版本 2026.10.27）";
 
+/* 民法第1145條第1項各款；第2項：第2款至第4款經被繼承人宥恕者，繼承權不喪失 */
+const LOST_CLAUSES = {
+  "1": "故意致被繼承人或應繼承人於死或雖未致死因而受刑之宣告",
+  "2": "以詐欺或脅迫使被繼承人為關於繼承之遺囑，或使其撤回或變更之",
+  "3": "以詐欺或脅迫妨害被繼承人為關於繼承之遺囑，或妨害其撤回或變更之",
+  "4": "偽造、變造、隱匿或湮滅被繼承人關於繼承之遺囑",
+  "5": "對於被繼承人有重大之虐待或侮辱情事，經被繼承人表示其不得繼承",
+};
+const LOST_FORGIVABLE = new Set(["2", "3", "4"]);
+/* 依登錄內容判斷是否喪失：{ clause, forgiven } → true／false */
+function lostEffective(info) {
+  if (!info || !info.clause) return !!info;                 // 未填款別：沿用「喪失」勾選
+  return !(info.forgiven && LOST_FORGIVABLE.has(String(info.clause)));
+}
+function lostBasisText(info) {
+  const c = info && info.clause ? String(info.clause) : "";
+  return c && LOST_CLAUSES[c] ? `民法第1145條第1項第${c}款（${LOST_CLAUSES[c]}）` : "民法第1145條";
+}
+
 /* 適用法律的時點檢查：本系統只實作現行民法
  * - 民國34年10月25日前開始之繼承：依日據時期臺灣之習慣（如戶主繼承），本系統不計算
  * - 民國74年6月5日民法繼承編修正施行前開始之繼承：部分規定不同（如養子女應繼分），提醒人工確認
@@ -380,7 +399,7 @@ function buildRemarks(fam, result) {
           text: `對${dname}之遺產拋棄繼承，不參與該部分之再轉繼承（民法第1174條）` +
             (final[pid] ? "；但仍保有其本身對原被繼承人之應繼分。" : "。") };
         else if (note === "喪失繼承權") R[pid] = { kind: "lost", tag: `喪失${dname}之繼承權`,
-          text: `對${dname}喪失繼承權（民法第1145條），不參與該部分之再轉繼承。` };
+          text: `對${dname}喪失繼承權（${lostBasisText((p.lostDetail || {})[did])}），不參與該部分之再轉繼承。` };
         continue;
       }
       switch (note) {
@@ -391,7 +410,7 @@ function buildRemarks(fam, result) {
           break;
         case "喪失繼承權":
           R[pid] = { kind: "lost", tag: rep ? "喪失繼承權・由子女代位" : "喪失繼承權・無繼承權",
-            text: "依民法第1145條喪失繼承權，" + (rep ? `由其直系血親卑親屬${names(rep)}代位繼承其應繼分（第1140條）。` : "且無直系血親卑親屬可代位繼承。") };
+            text: `依${lostBasisText((p.lostDetail || {})[did])}喪失繼承權，` + (rep ? `由其直系血親卑親屬${names(rep)}代位繼承其應繼分（第1140條）。` : "且無直系血親卑親屬可代位繼承。") };
           break;
         case "繼承開始前死亡":
           if (rep) R[pid] = { kind: "predeceased", tag: "繼承開始前死亡・由子女代位",
@@ -466,7 +485,12 @@ function applicableRules(fam, result) {
     text: "繼承人得於知悉其得繼承之時起三個月內拋棄繼承權，拋棄之效力溯及於繼承開始時。拋棄者之應繼分歸屬其他同為繼承之人；" +
       "第一順序繼承人中親等近者均拋棄時，由次親等之直系血親卑親屬繼承。" });
   if (anyNote("喪失繼承權")) rules.push({ title: "喪失繼承權（民法第1145條）",
-    text: "繼承人有民法第1145條第1項各款情事者喪失其繼承權；其直系血親卑親屬得代位繼承。" });
+    text: "繼承人有下列各款情事之一者，喪失其繼承權：" + Object.entries(LOST_CLAUSES).map(([k, v]) => `（${"一二三四五"[k - 1]}）${v}者`).join("；") +
+      "。前項第二款至第四款之規定，如經被繼承人宥恕者，其繼承權不喪失。喪失繼承權者，其直系血親卑親屬得代位繼承（第1140條）。" });
+  const forgiven = Object.values(fam.p).filter(p => Object.entries(p.lostDetail || {}).some(([d, i]) => i && i.forgiven && LOST_FORGIVABLE.has(String(i.clause))));
+  if (forgiven.length) rules.push({ title: "喪失繼承權之宥恕（民法第1145條第2項）",
+    text: forgiven.map(p => Object.entries(p.lostDetail).filter(([, i]) => i && i.forgiven).map(([d, i]) =>
+      `${p.name}對${fam.p[d] ? fam.p[d].name : "被繼承人"}雖有第1145條第1項第${i.clause}款情事，經被繼承人宥恕，其繼承權不喪失`).join("；")).join("；") + "。" });
   if (anyNote("拋棄繼承") && all.some(r => r.log.some(l => l.includes("第1176條第5項")))) rules.push({ title: "次親等遞補（民法第1176條第5項）",
     text: "第一順序之繼承人，其親等近者均拋棄繼承權時，由次親等之直系血親卑親屬繼承，按人數平均。繼承開始前死亡且無人代位、尚未出生或死產者，本非繼承人，不列入「均拋棄」的判斷。" });
   if (Object.values(fam.p).some(p => p.fetus)) rules.push({ title: "胎兒之權利（民法第7條、第1166條）",
@@ -559,4 +583,4 @@ function validate(persons, decedentId) {
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime };
+if (typeof module !== "undefined") module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime, LOST_CLAUSES, LOST_FORGIVABLE, lostEffective, lostBasisText };

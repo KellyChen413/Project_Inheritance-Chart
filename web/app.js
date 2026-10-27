@@ -68,6 +68,9 @@ function loadData(raw) {
       fatherName: r.fatherName || "", motherName: r.motherName || "", spouseName: r.spouseName || "",
       renounceChecks: r.renounceChecks && typeof r.renounceChecks === "object" ? r.renounceChecks : {},
       lost_right: Array.isArray(r.lost_right) ? r.lost_right.map(String) : [],
+      lostChecks: Object.fromEntries(Object.entries(r.lostChecks && typeof r.lostChecks === "object" ? r.lostChecks : {})
+        .filter(([, i]) => i && typeof i === "object" && /^[1-5]?$/.test(String(i.clause || "")))
+        .map(([d, i]) => [String(d), { clause: String(i.clause || ""), forgiven: !!i.forgiven && LOST_FORGIVABLE.has(String(i.clause)) }])),
       sources: Array.isArray(r.sources) ? r.sources : [],
     });
     for (const t of Array.isArray(r.renounced) ? r.renounced : []) p.renounceChecks[String(t)] ||= { status: "yes" };
@@ -111,6 +114,22 @@ function download(blob, name) {
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- 喪失繼承權登錄 ----------
+ * p.lostChecks[did] = { clause: "1"～"5"（空白＝未填款別）, forgiven }；p.lost_right 只留「實際喪失」者，供計算與匯出
+ */
+function lostInfoOf(p, did) {
+  if (!did) return null;
+  const rec = (p.lostChecks || {})[did];
+  if (rec) return rec;
+  return (p.lost_right || []).includes(did) ? { clause: "", forgiven: false } : null;
+}
+function setLostInfo(p, did, info) {
+  p.lostChecks ||= {};
+  if (info) p.lostChecks[did] = info; else delete p.lostChecks[did];
+  p.lost_right = (p.lost_right || []).filter(x => x !== did);
+  if (info && lostEffective(info)) p.lost_right.push(did);
 }
 
 /* ---------- 訊息 ---------- */
@@ -557,17 +576,31 @@ function renderTable() {
       if (nm && !p[rel]) { const h = document.createElement("small"); h.className = "note"; h.textContent = `戶籍記載：${nm}`; h.title = "此人不在名單中；如與繼承有關，請調閱其資料"; cell.appendChild(h); }
     }
 
-    const c = document.createElement("input");
-    c.type = "checkbox";
-    c.checked = !!state.decedent && p.lost_right.includes(state.decedent);
-    c.disabled = !state.decedent || p.id === state.decedent;
-    c.title = "對被繼承人喪失繼承權（第1145條）";
-    c.addEventListener("change", () => {
-      p.lost_right = p.lost_right.filter(x => x !== state.decedent);
-      if (c.checked) p.lost_right.push(state.decedent);
+    // 喪失繼承權（民法第1145條）：選款別；第2～4款可勾選「經宥恕」
+    const lostCell = document.createElement("div"); lostCell.className = "lost-cell";
+    const sel = document.createElement("select");
+    sel.disabled = !state.decedent || p.id === state.decedent;
+    sel.title = "對目前被繼承人喪失繼承權的事由（民法第1145條第1項）";
+    const info = lostInfoOf(p, state.decedent);
+    for (const [v, t] of [["", "—"], ...(info && !info.clause ? [["?", "喪失（款別未填）"]] : []),
+      ...Object.entries(LOST_CLAUSES).map(([k, v]) => [k, `第${k}款 ${v.length > 14 ? v.slice(0, 14) + "…" : v}`])]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = t; if (v !== "" && v !== "?") o.title = LOST_CLAUSES[v]; sel.appendChild(o);
+    }
+    sel.value = !info ? "" : info.clause || "?";
+    const fg = document.createElement("label"); fg.className = "small forgive";
+    const fc = document.createElement("input"); fc.type = "checkbox"; fc.checked = !!(info && info.forgiven);
+    fg.append(fc, document.createTextNode(" 經宥恕"));
+    fg.title = "第2款至第4款經被繼承人宥恕者，繼承權不喪失（民法第1145條第2項）";
+    fg.hidden = !(info && LOST_FORGIVABLE.has(info.clause));
+    const save = () => {
+      const v = sel.value;
+      setLostInfo(p, state.decedent, v === "" ? null : { clause: v === "?" ? "" : v, forgiven: LOST_FORGIVABLE.has(v) && fc.checked });
+      fg.hidden = !LOST_FORGIVABLE.has(v);
       schedule();
-    });
-    td(c, "center");
+    };
+    sel.addEventListener("change", save); fc.addEventListener("change", save);
+    lostCell.append(sel, fg);
+    td(lostCell, "center");
 
     const del = document.createElement("button");
     del.type = "button"; del.className = "icon-btn"; del.title = "刪除這一列"; del.textContent = "✕";
@@ -652,7 +685,7 @@ function enginePersons() {
     marriageEnd: parseDate(p.marriageEndRaw), _marriageEndRaw: (p.marriageEndRaw || "").trim(),
     father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
     fatherName: p.fatherName || "", motherName: p.motherName || "", changeNotes: p.changeNotes || [],
-    renounced: renouncedOf(p), lost_right: p.lost_right,
+    renounced: renouncedOf(p), lost_right: p.lost_right, lostDetail: p.lostChecks || {},
   }));
 }
 function mkEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
