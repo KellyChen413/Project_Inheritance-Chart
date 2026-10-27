@@ -102,6 +102,38 @@ const cases = {
     assert.ok(m.conflicts.some(x => x.includes("王志偉") && x.includes("死亡日期")));
     assert.strictEqual(byName(c, "王志偉").deathRaw, "109/6/1");
   },
+  "戶役政實際欄位：統號、變更註記自動對應，項目／查看略過": () => {
+    const { text } = decodeBytes(fs.readFileSync(path.join(DATA, "範例1_王大明_二親等資料.csv")));
+    const t = hhrReadTable(text);
+    const m = hhrGuessMapping(t.headers);
+    assert.deepStrictEqual(Object.keys(m).sort(), ["birth", "death", "fatherName", "fatherUid", "marriageDate", "motherName", "motherUid",
+      "name", "nameNote", "relation", "spouseName", "spouseUid", "uid", "uidNote"].sort());
+    assert.ok(!Object.values(m).includes(t.headers.indexOf("項目")) && !Object.values(m).includes(t.headers.indexOf("查看")));
+    assert.strictEqual(hhrGuessKind(t.headers), "kin");
+  },
+  "無統號者以姓名＋出生日期跨檔合併": () => {
+    const c = newCase();
+    importFile(c, "範例1_王大明_二親等資料.csv");
+    importFile(c, "範例2_王淑娟_二親等資料.csv");
+    const fu = c.persons.filter(p => p.name === "王福來");
+    assert.strictEqual(fu.length, 1);
+    assert.strictEqual(fu[0].uid, "");
+    assert.strictEqual(byName(c, "王大明").father, fu[0].id);
+  },
+  "姓名變更：父母姓名記為舊名，仍能連到改名後的人": () => {
+    const c = newCase();
+    const r = importFile(c, "範例1_王大明_二親等資料.csv");
+    assert.deepStrictEqual(byName(c, "王淑芬").nameAliases, ["王淑華"]);
+    assert.strictEqual(byName(c, "陳小美").mother, byName(c, "王淑芬").id);
+    assert.ok(r.parsed.warnings.some(w => w.includes("姓名變更註記")));
+    assert.ok(!r.link.warnings.some(w => w.includes("陳小美") && w.includes("王淑華")));
+  },
+  "性別由父母連結推得（匯出檔無性別欄）": () => {
+    const c = newCase();
+    importFile(c, "範例1_王大明_二親等資料.csv");
+    assert.strictEqual(byName(c, "王大明").gender, "M");
+    assert.strictEqual(byName(c, "林美華").gender, "F");
+  },
   "欄位名稱不同也能對應": () => {
     const t = hhrReadTable("與本人關係,親屬姓名,身分證統一編號,出生年月日\n本人,甲,A000000001,0500101");
     const m = hhrGuessMapping(t.headers);
