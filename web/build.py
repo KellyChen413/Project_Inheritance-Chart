@@ -11,6 +11,8 @@ sample = json.loads((here.parent / "data/sample_family.json").read_text(encoding
 samples = [{"name": f.name, "text": f.read_text(encoding="utf-8-sig")}
            for f in sorted((here.parent / "data").glob("範例*_*.csv"))]
 html = html.replace("/*HHR_SAMPLES*/", json.dumps(samples, ensure_ascii=False).replace("</", "<\\/"))
+sample3 = json.loads((here.parent / "data/sample_3gen.json").read_text(encoding="utf-8"))
+html = html.replace("/*SAMPLE3*/", json.dumps(sample3, ensure_ascii=False).replace("</", "<\\/"))
 html = (html.replace("/*SAMPLE*/", json.dumps(sample, ensure_ascii=False).replace("</", "<\\/"))
             .replace("/*ENGINE*/", engine)
             .replace("/*CHART*/", (here / "chart.js").read_text(encoding="utf-8") + "\n" +

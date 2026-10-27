@@ -21,7 +21,7 @@ function el(tag, attrs = {}, text) {
 }
 
 /* 每個人在圖上的身分、方塊文字與備註 */
-function classify(fam, result) {
+function classify(fam, result, scale = null, scaleName = "") {
   const final = finalShares(result);
   const remarks = buildRemarks(fam, result);
   const info = {}, original = {};
@@ -30,6 +30,7 @@ function classify(fam, result) {
       original[s.id] ??= s.share;
       if (!res.retransfers[s.id] && !info[s.id]) {
         info[s.id] = { kind: "heir", lines: [fromName ? `再轉繼承（自${fromName}）` : s.short, `應繼分 ${final[s.id]}`] };
+        if (scale) info[s.id].scaleLine = `占${scaleName}遺產 ${final[s.id].mul(scale)}`;
         if (fam.p[s.id].fetus === "pending") info[s.id].lines.splice(1, 0, "胎兒・保留應繼分（待出生）");
       }
     }
@@ -125,12 +126,12 @@ function layout(fam, did) {
 }
 
 function drawChart(fam, result, opts = {}) {
-  const { info, remarks } = classify(fam, result);
+  const { info, remarks } = classify(fam, result, opts.scale || null, opts.scaleName || "");
   const L = layout(fam, result.decedentId);
   const W = Math.max(L.width, 1040);
 
   // 備註編號：依圖上位置由上而下、由左而右
-  const marked = Object.keys(remarks).filter(pid => L.pos[pid])
+  const marked = Object.keys(remarks).filter(pid => L.pos[pid] && remarks[pid].tag !== "非繼承人")   // 與本次繼承無關者不編備註
     .sort((a, b) => L.pos[a].y - L.pos[b].y || L.pos[a].x - L.pos[b].x);
   const markOf = Object.fromEntries(marked.map((pid, i) => [pid, i + 1]));
   const NOTE_SIZE = 12.5, NOTE_LH = 21;
@@ -142,25 +143,25 @@ function drawChart(fam, result, opts = {}) {
   });
   const notesH = noteBlocks.length ? 46 + noteBlocks.reduce((a, b) => a + b.lines.length * NOTE_LH + 4, 0) : 0;
   const treeBottom = L.height - 70;
-  const H = treeBottom + 30 + notesH + 50;
+  // 標題下方的說明行（再轉繼承範圍＋待確認提示），超過兩行時整張圖往下移
+  const perHead = Math.max(20, Math.floor((W - MARGIN * 2) / 13.5));
+  const split = t => { const ch = [...t], out = []; for (let i = 0; i < ch.length; i += perHead) out.push(ch.slice(i, i + perHead).join("")); return out; };
+  const headLines = [...(opts.scope ? split(opts.scope).map(t => ({ t, warn: false })) : []), ...(opts.note ? split(opts.note).map(t => ({ t, warn: true })) : [])];
+  const dy = Math.max(0, headLines.length - 2) * 18;
+  const H = treeBottom + 30 + notesH + 50 + dy;
   const dec = fam.p[result.decedentId];
   const svg = el("svg", { xmlns: SVGNS, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
     "font-family": "Inter,'PingFang TC','Microsoft JhengHei UI','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif" });
   svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: "#FFFFFF" }));
 
   // 標題
-  svg.appendChild(el("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 26, "font-weight": 700, fill: "#1A1A1A" }, "繼承系統表"));
+  svg.appendChild(el("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 26, "font-weight": 700, fill: "#1A1A1A" }, opts.title || "繼承系統表"));
   svg.appendChild(el("text", { x: W / 2, y: 72, "text-anchor": "middle", "font-size": 15, fill: "#333" },
     `被繼承人：${dec.name}（${roc(result.openedOn)}死亡）　繼承順序：${result.order}`));
 
-  // 待確認提示：放在圖例下方，過長時自動換行，不與圖例重疊
-  if (opts.note) {
-    const per = Math.max(20, Math.floor((W - MARGIN * 2) / 13.5));
-    const chars = [...opts.note];
-    for (let i = 0, ln = 0; i < chars.length; i += per, ln++) {
-      svg.appendChild(el("text", { x: MARGIN, y: 124 + ln * 18, "font-size": 13, "font-weight": 700, fill: "#B3261E" }, chars.slice(i, i + per).join("")));
-    }
-  }
+  // 說明行：放在圖例下方，過長時自動換行，不與圖例重疊
+  headLines.forEach((l, i) => svg.appendChild(el("text", { x: MARGIN, y: 124 + i * 18, "font-size": 13, "font-weight": l.warn ? 700 : 500,
+    fill: l.warn ? "#B3261E" : "#2F4A8A" }, l.t)));
 
   // 圖例
   const legendW = k => 30 + [...KIND[k].label].length * 12.5 + 18;
@@ -173,8 +174,10 @@ function drawChart(fam, result, opts = {}) {
     svg.appendChild(g); lx += legendW(k);
   }
 
+  const body = el("g", { transform: `translate(0 ${dy})` });
+  svg.appendChild(body);
   const lines = el("g", { stroke: "#4A4A4A", "stroke-width": 1.4, fill: "none" });
-  svg.appendChild(lines);
+  body.appendChild(lines);
 
   // 婚姻線與親子線
   for (const u of L.units) {
@@ -204,7 +207,7 @@ function drawChart(fam, result, opts = {}) {
       lines.appendChild(el("line", { x1: Math.min(src.x, ...xs), y1: busY, x2: Math.max(src.x, ...xs), y2: busY }));
       for (const kx of xs) lines.appendChild(el("line", { x1: kx, y1: busY, x2: kx, y2: kids[0].y }));
     }
-    if (coupleMid) svg.appendChild(el("circle", { cx: coupleMid.x, cy: coupleMid.y, r: 3.5, fill: "#4A4A4A" }));
+    if (coupleMid) body.appendChild(el("circle", { cx: coupleMid.x, cy: coupleMid.y, r: 3.5, fill: "#4A4A4A" }));
   }
 
   // 人物方塊
@@ -233,6 +236,7 @@ function drawChart(fam, result, opts = {}) {
       rows.push({ t, size: last ? 12.5 : kind === "renounced" ? 11.5 : 10.5, weight: last || kind === "renounced" ? 700 : 400,
         ink: kind === "renounced" || (t.includes("拋棄") || t.includes("喪失")) ? "#9C1F16" : null });
     });
+    if (info[p.id].scaleLine) rows.push({ t: info[p.id].scaleLine, size: 10.5, weight: 600, ink: "#2F4A8A" });
     const lh = r => r.size + 4;
     const total = rows.reduce((a, r) => a + lh(r), 0);
     let ty = ps.y + (NODE_H - total) / 2;
@@ -243,24 +247,24 @@ function drawChart(fam, result, opts = {}) {
       g.appendChild(el("text", { x: ps.x + NODE_W / 2, y: ty - 4, "text-anchor": "middle", "font-size": fit.toFixed(1),
         "font-weight": r.weight || 400, fill: r.ink || (kind === "renounced" ? "#5A2A26" : color) }, r.t));
     }
-    svg.appendChild(g);
+    body.appendChild(g);
   }
 
   // 備註欄
   if (noteBlocks.length) {
     let y = treeBottom + 30;
-    svg.appendChild(el("line", { x1: MARGIN, y1: y, x2: W - MARGIN, y2: y, stroke: "#BBBBBB", "stroke-width": 1 }));
-    svg.appendChild(el("text", { x: MARGIN, y: y + 28, "font-size": 15, "font-weight": 700, fill: "#1A1A1A" }, "備註"));
+    body.appendChild(el("line", { x1: MARGIN, y1: y, x2: W - MARGIN, y2: y, stroke: "#BBBBBB", "stroke-width": 1 }));
+    body.appendChild(el("text", { x: MARGIN, y: y + 28, "font-size": 15, "font-weight": 700, fill: "#1A1A1A" }, "備註"));
     y += 46;
     for (const b of noteBlocks) {
       const ink = b.kind === "renounced" || b.kind === "lost" ? "#9C1F16" : "#333";
-      svg.appendChild(el("text", { x: MARGIN, y: y + 14, "font-size": NOTE_SIZE, "font-weight": 700, fill: ink }, `※${b.n}`));
-      b.lines.forEach((ln, i) => svg.appendChild(el("text", { x: MARGIN + 34, y: y + 14 + i * NOTE_LH, "font-size": NOTE_SIZE, fill: ink }, ln)));
+      body.appendChild(el("text", { x: MARGIN, y: y + 14, "font-size": NOTE_SIZE, "font-weight": 700, fill: ink }, `※${b.n}`));
+      b.lines.forEach((ln, i) => body.appendChild(el("text", { x: MARGIN + 34, y: y + 14 + i * NOTE_LH, "font-size": NOTE_SIZE, fill: ink }, ln)));
       y += b.lines.length * NOTE_LH + 4;
     }
   }
 
-  svg.appendChild(el("text", { x: MARGIN, y: H - 22, "font-size": 11, fill: "#777" },
+  body.appendChild(el("text", { x: MARGIN, y: H - 22 - dy, "font-size": 11, fill: "#777" },
     "本表由離線系統依現行民法自動產生，僅供承辦參考，應與戶籍資料逐一核對後使用。"));
   return svg;
 }

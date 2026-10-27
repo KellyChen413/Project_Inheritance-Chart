@@ -230,6 +230,14 @@ table#people { border-collapse: separate; border-spacing: 0; width: 100%; min-wi
 .view-tabs button:hover:not(:disabled) { color: var(--ink); background: color-mix(in srgb, var(--surface) 55%, transparent); box-shadow: none; transform: none; }
 .view-tabs button.active, .view-tabs button.active:hover:not(:disabled) { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
 
+/* ---------- 分次繼承切換 ---------- */
+.event-box { display: grid; gap: 14px; min-width: 0; }
+.event-tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.event-label { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 4px; }
+.event-tabs button { font-size: 13.5px; padding: 7px 14px; border-radius: var(--r-pill); }
+.event-tabs button.active, .event-tabs button.active:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--canvas); transform: none; }
+.event-chart.inactive { display: none; }
+
 /* ---------- 樹狀圖（紙本） ---------- */
 .chart-wrap { overflow: auto; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--paper); box-shadow: var(--shadow-sm); }
 .chart-wrap svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
@@ -370,6 +378,8 @@ footer.note {
   .panel { border: none; padding: 0; margin: 0; box-shadow: none; background: #fff; }
   .chart-wrap { border: none; overflow: visible; box-shadow: none; }
   .chart-wrap svg { width: 100%; height: auto; max-height: 180mm; }
+  .event-chart.inactive { display: block; }                 /* 列印時每一次繼承各印一頁 */
+  .event-chart + .event-chart { break-before: page; }
   .result-table, .result-rules, .renounce-panel { break-before: page; overflow: visible; }
   .result-table th, .result-table td, .renounce-panel th, .renounce-panel td { color: #000; background: #fff; border-color: #888; }
   .result-table tr, .result-rules dd { break-inside: avoid; }
@@ -422,6 +432,7 @@ footer.note {
       <li><b>胎兒：</b>繼承開始時已受胎、尚未出生者，在出生日期下方將胎兒狀態設為「待出生」，系統依民法第7條、第1166條保留其應繼分，並標示本表尚非最終結果；出生後改為「已活產」並填出生日期；死產者設為「死產」，系統會重新計算。</li>
       <li><b>同日死亡：</b>繼承人與被繼承人同日死亡時，可在死亡日期下方填寫時間（24 小時制）判斷先後；未填時依民法第11條推定同時死亡，並列為待確認事項。同時死亡者的子女仍得代位繼承（通說）。</li>
       <li><b>婚姻終止：</b>配偶欄下方可填婚姻終止（如離婚）日期；於繼承開始前終止者，不具配偶繼承權。</li>
+      <li><b>分次繼承系統表：</b>繼承人於遺產分割前死亡（再轉繼承）時，系統會為每一次死亡各產生一張繼承系統表，例如父親死亡為第 1 次、其後次子死亡為第 2 次；稱謂改以該次的被繼承人為準，方塊中以藍字標示占原遺產的比例。畫面上用上方按鈕切換，列印時每一次各印一頁。可按「三代綜合案例」查看示範。</li>
       <li><b>次親等遞補：</b>第一順序親等近者中得繼承者均拋棄時，依民法第1176條第5項由次親等直系血親卑親屬按人數繼承；先死亡且無人代位者本非繼承人，不列入「均拋棄」的判斷，判斷過程中會逐一列出。</li>
       <li><b>查無繼承人：</b>系統只會顯示「目前查無繼承人」，不會直接判定無人承受；確認無人承受（民法第1177條）前，應先完成親屬調查。</li>
       <li>系統表與明細會自動加註備註：拋棄繼承、喪失繼承權、代位繼承、再轉繼承等情形，均註明條文依據。</li>
@@ -436,6 +447,7 @@ footer.note {
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn-import" title="戶籍資料 CSV 或 PDF（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
+      <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
       <button type="button" id="btn-template" title="本系統 CSV 範本，用 Excel 手動填寫">CSV 範本</button>
       <button type="button" id="btn-export-csv" title="匯出為 CSV，可用 Excel 開啟">匯出 CSV</button>
@@ -475,6 +487,7 @@ footer.note {
 <dialog id="map-dialog"></dialog>
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">/*SAMPLE*/</script>
+<script type="application/json" id="sample-3gen">/*SAMPLE3*/</script>
 <script type="application/json" id="hhr-samples">/*HHR_SAMPLES*/</script>
 <script>/*PDFJS*/</script>
 <script>/*PDFJS_WORKER*/</script>

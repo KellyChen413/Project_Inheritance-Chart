@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 安全政策：禁止載入或連線到任何外部位址；以雜湊值只允許本檔案內既有的程式與樣式執行（由 web/build.py 產生時自動計算） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-FUXjjaV5+bHMzh9Hv4UE4xOoNbEGHpeWTIbcRSexE+M='; style-src 'sha256-NpR7X6XXIucwH+39XC4bwbF/DLJo1ZCe9CMUVWq/s+s='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-VY8Y+dClg+Q7J4L36ddOt9UfCVQ6+Q6BZDLVkSLnbeg='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>繼承系統表產生器</title>
@@ -233,6 +233,14 @@ table#people { border-collapse: separate; border-spacing: 0; width: 100%; min-wi
 .view-tabs button:hover:not(:disabled) { color: var(--ink); background: color-mix(in srgb, var(--surface) 55%, transparent); box-shadow: none; transform: none; }
 .view-tabs button.active, .view-tabs button.active:hover:not(:disabled) { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
 
+/* ---------- 分次繼承切換 ---------- */
+.event-box { display: grid; gap: 14px; min-width: 0; }
+.event-tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.event-label { font-size: 13px; color: var(--muted); font-weight: 600; margin-right: 4px; }
+.event-tabs button { font-size: 13.5px; padding: 7px 14px; border-radius: var(--r-pill); }
+.event-tabs button.active, .event-tabs button.active:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--canvas); transform: none; }
+.event-chart.inactive { display: none; }
+
 /* ---------- 樹狀圖（紙本） ---------- */
 .chart-wrap { overflow: auto; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--paper); box-shadow: var(--shadow-sm); }
 .chart-wrap svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
@@ -373,6 +381,8 @@ footer.note {
   .panel { border: none; padding: 0; margin: 0; box-shadow: none; background: #fff; }
   .chart-wrap { border: none; overflow: visible; box-shadow: none; }
   .chart-wrap svg { width: 100%; height: auto; max-height: 180mm; }
+  .event-chart.inactive { display: block; }                 /* 列印時每一次繼承各印一頁 */
+  .event-chart + .event-chart { break-before: page; }
   .result-table, .result-rules, .renounce-panel { break-before: page; overflow: visible; }
   .result-table th, .result-table td, .renounce-panel th, .renounce-panel td { color: #000; background: #fff; border-color: #888; }
   .result-table tr, .result-rules dd { break-inside: avoid; }
@@ -425,6 +435,7 @@ footer.note {
       <li><b>胎兒：</b>繼承開始時已受胎、尚未出生者，在出生日期下方將胎兒狀態設為「待出生」，系統依民法第7條、第1166條保留其應繼分，並標示本表尚非最終結果；出生後改為「已活產」並填出生日期；死產者設為「死產」，系統會重新計算。</li>
       <li><b>同日死亡：</b>繼承人與被繼承人同日死亡時，可在死亡日期下方填寫時間（24 小時制）判斷先後；未填時依民法第11條推定同時死亡，並列為待確認事項。同時死亡者的子女仍得代位繼承（通說）。</li>
       <li><b>婚姻終止：</b>配偶欄下方可填婚姻終止（如離婚）日期；於繼承開始前終止者，不具配偶繼承權。</li>
+      <li><b>分次繼承系統表：</b>繼承人於遺產分割前死亡（再轉繼承）時，系統會為每一次死亡各產生一張繼承系統表，例如父親死亡為第 1 次、其後次子死亡為第 2 次；稱謂改以該次的被繼承人為準，方塊中以藍字標示占原遺產的比例。畫面上用上方按鈕切換，列印時每一次各印一頁。可按「三代綜合案例」查看示範。</li>
       <li><b>次親等遞補：</b>第一順序親等近者中得繼承者均拋棄時，依民法第1176條第5項由次親等直系血親卑親屬按人數繼承；先死亡且無人代位者本非繼承人，不列入「均拋棄」的判斷，判斷過程中會逐一列出。</li>
       <li><b>查無繼承人：</b>系統只會顯示「目前查無繼承人」，不會直接判定無人承受；確認無人承受（民法第1177條）前，應先完成親屬調查。</li>
       <li>系統表與明細會自動加註備註：拋棄繼承、喪失繼承權、代位繼承、再轉繼承等情形，均註明條文依據。</li>
@@ -439,6 +450,7 @@ footer.note {
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn-import" title="戶籍資料 CSV 或 PDF（可多選）、本系統 CSV 或案件檔">匯入檔案</button>
       <button type="button" id="btn-demo" title="依序匯入三份虛構戶籍資料，示範實務流程">戶籍匯入範例</button>
+      <button type="button" id="btn-sample3" title="三代家族：代位繼承、再轉繼承、拋棄繼承">三代綜合案例</button>
       <button type="button" id="btn-sample">手動資料範例</button>
       <button type="button" id="btn-template" title="本系統 CSV 範本，用 Excel 手動填寫">CSV 範本</button>
       <button type="button" id="btn-export-csv" title="匯出為 CSV，可用 Excel 開啟">匯出 CSV</button>
@@ -478,6 +490,7 @@ footer.note {
 <dialog id="map-dialog"></dialog>
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">{"_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。", "decedent": "P01", "persons": [{"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10", "father": "P90", "mother": "P91", "spouse": "P02"}, {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"}, {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"}, {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"}, {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"}, {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"}, {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01", "father": "P01", "mother": "P02", "spouse": "P30"}, {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"}, {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"}, {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"}, {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05", "father": "P01", "mother": "P02", "renounced": ["P01"]}, {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"}, {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01", "father": "P01", "mother": "P02", "spouse": "P31"}, {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"}, {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}]}</script>
+<script type="application/json" id="sample-3gen">{"_說明": "三代綜合案例（全部虛構）：代位繼承、再轉繼承、拋棄繼承（含僅拋棄再轉部分）", "decedent": "X", "queried": ["X", "C2", "C3", "C4"], "persons": [{"id": "X", "name": "陳國華", "gender": "M", "birth": "1945-04-02", "death": "2025-03-10", "spouse": "W", "uid": "A000001001"}, {"id": "W", "name": "林秀蘭", "gender": "F", "birth": "1948-06-15", "uid": "A000001002", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C1", "name": "陳志明", "gender": "M", "birth": "1970-01-12", "father": "X", "mother": "W", "uid": "A000001011", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C2", "name": "陳志豪", "gender": "M", "birth": "1973-05-20", "death": "2025-08-01", "father": "X", "mother": "W", "spouse": "C2W", "uid": "A000001012"}, {"id": "C2W", "name": "吳雅芳", "gender": "F", "birth": "1975-02-03", "uid": "A000001021", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G1", "name": "陳柏翰", "gender": "M", "birth": "2000-03-03", "father": "C2", "mother": "C2W", "uid": "A000001031", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G2", "name": "陳思妤", "gender": "F", "birth": "2003-07-07", "father": "C2", "mother": "C2W", "uid": "A000001032", "renounceChecks": {"C2": {"status": "yes", "court": "臺灣新北地方法院", "caseNo": "114年度司繼字第987號", "checkedOn": "114/10/20"}}}, {"id": "C3", "name": "陳美玲", "gender": "F", "birth": "1976-09-09", "death": "2016-04-01", "father": "X", "mother": "W", "spouse": "C3H", "uid": "A000001013"}, {"id": "C3H", "name": "黃建宏", "gender": "M", "birth": "1974-12-24", "uid": "A000001022"}, {"id": "G3", "name": "黃子軒", "gender": "M", "birth": "2001-01-01", "father": "C3H", "mother": "C3", "uid": "A000001033", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "G4", "name": "黃子涵", "gender": "F", "birth": "2004-02-02", "father": "C3H", "mother": "C3", "uid": "A000001034", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C4", "name": "陳美珍", "gender": "F", "birth": "1979-11-11", "father": "X", "mother": "W", "uid": "A000001014", "renounceChecks": {"X": {"status": "yes", "court": "臺灣臺北地方法院", "caseNo": "114年度司繼字第321號", "checkedOn": "114/6/2"}}}, {"id": "G5", "name": "李小美", "gender": "F", "birth": "2008-08-08", "mother": "C4", "uid": "A000001035"}]}</script>
 <script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n母,李秀英,A000000091,女,015/07/15,,,,王福來\n配偶,林美華,A000000002,女,040/09/03,,,,王大明\n弟,王大華,A000000092,男,042/04/08,,王福來,李秀英,\n長男,王志強,A000000010,男,061/01/20,,王大明,林美華,\n次男,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n長女,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n次女,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n孫,王小安,A000000020,男,090/08/08,,王志偉,黃雅婷,\n外孫女,陳小美,A000000022,女,095/05/17,,陳文雄,王淑芬,\n外孫,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n父,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n母,林美華,A000000002,女,040/09/03,,,,王大明\n配偶,張建國,A000000031,男,068/09/09,,張老三,吳美玉,王淑娟\n長男,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n兄,王志強,A000000010,男,061/01/20,,王大明,林美華,\n兄,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n姊,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n祖父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n祖母,李秀英,A000000091,女,015/07/15,,,,王福來\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
 <script>/**
  * @licstart The following is the entire license notice for the
@@ -1096,7 +1109,7 @@ function el(tag, attrs = {}, text) {
 }
 
 /* 每個人在圖上的身分、方塊文字與備註 */
-function classify(fam, result) {
+function classify(fam, result, scale = null, scaleName = "") {
   const final = finalShares(result);
   const remarks = buildRemarks(fam, result);
   const info = {}, original = {};
@@ -1105,6 +1118,7 @@ function classify(fam, result) {
       original[s.id] ??= s.share;
       if (!res.retransfers[s.id] && !info[s.id]) {
         info[s.id] = { kind: "heir", lines: [fromName ? `再轉繼承（自${fromName}）` : s.short, `應繼分 ${final[s.id]}`] };
+        if (scale) info[s.id].scaleLine = `占${scaleName}遺產 ${final[s.id].mul(scale)}`;
         if (fam.p[s.id].fetus === "pending") info[s.id].lines.splice(1, 0, "胎兒・保留應繼分（待出生）");
       }
     }
@@ -1200,12 +1214,12 @@ function layout(fam, did) {
 }
 
 function drawChart(fam, result, opts = {}) {
-  const { info, remarks } = classify(fam, result);
+  const { info, remarks } = classify(fam, result, opts.scale || null, opts.scaleName || "");
   const L = layout(fam, result.decedentId);
   const W = Math.max(L.width, 1040);
 
   // 備註編號：依圖上位置由上而下、由左而右
-  const marked = Object.keys(remarks).filter(pid => L.pos[pid])
+  const marked = Object.keys(remarks).filter(pid => L.pos[pid] && remarks[pid].tag !== "非繼承人")   // 與本次繼承無關者不編備註
     .sort((a, b) => L.pos[a].y - L.pos[b].y || L.pos[a].x - L.pos[b].x);
   const markOf = Object.fromEntries(marked.map((pid, i) => [pid, i + 1]));
   const NOTE_SIZE = 12.5, NOTE_LH = 21;
@@ -1217,25 +1231,25 @@ function drawChart(fam, result, opts = {}) {
   });
   const notesH = noteBlocks.length ? 46 + noteBlocks.reduce((a, b) => a + b.lines.length * NOTE_LH + 4, 0) : 0;
   const treeBottom = L.height - 70;
-  const H = treeBottom + 30 + notesH + 50;
+  // 標題下方的說明行（再轉繼承範圍＋待確認提示），超過兩行時整張圖往下移
+  const perHead = Math.max(20, Math.floor((W - MARGIN * 2) / 13.5));
+  const split = t => { const ch = [...t], out = []; for (let i = 0; i < ch.length; i += perHead) out.push(ch.slice(i, i + perHead).join("")); return out; };
+  const headLines = [...(opts.scope ? split(opts.scope).map(t => ({ t, warn: false })) : []), ...(opts.note ? split(opts.note).map(t => ({ t, warn: true })) : [])];
+  const dy = Math.max(0, headLines.length - 2) * 18;
+  const H = treeBottom + 30 + notesH + 50 + dy;
   const dec = fam.p[result.decedentId];
   const svg = el("svg", { xmlns: SVGNS, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
     "font-family": "Inter,'PingFang TC','Microsoft JhengHei UI','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif" });
   svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: "#FFFFFF" }));
 
   // 標題
-  svg.appendChild(el("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 26, "font-weight": 700, fill: "#1A1A1A" }, "繼承系統表"));
+  svg.appendChild(el("text", { x: W / 2, y: 40, "text-anchor": "middle", "font-size": 26, "font-weight": 700, fill: "#1A1A1A" }, opts.title || "繼承系統表"));
   svg.appendChild(el("text", { x: W / 2, y: 72, "text-anchor": "middle", "font-size": 15, fill: "#333" },
     `被繼承人：${dec.name}（${roc(result.openedOn)}死亡）　繼承順序：${result.order}`));
 
-  // 待確認提示：放在圖例下方，過長時自動換行，不與圖例重疊
-  if (opts.note) {
-    const per = Math.max(20, Math.floor((W - MARGIN * 2) / 13.5));
-    const chars = [...opts.note];
-    for (let i = 0, ln = 0; i < chars.length; i += per, ln++) {
-      svg.appendChild(el("text", { x: MARGIN, y: 124 + ln * 18, "font-size": 13, "font-weight": 700, fill: "#B3261E" }, chars.slice(i, i + per).join("")));
-    }
-  }
+  // 說明行：放在圖例下方，過長時自動換行，不與圖例重疊
+  headLines.forEach((l, i) => svg.appendChild(el("text", { x: MARGIN, y: 124 + i * 18, "font-size": 13, "font-weight": l.warn ? 700 : 500,
+    fill: l.warn ? "#B3261E" : "#2F4A8A" }, l.t)));
 
   // 圖例
   const legendW = k => 30 + [...KIND[k].label].length * 12.5 + 18;
@@ -1248,8 +1262,10 @@ function drawChart(fam, result, opts = {}) {
     svg.appendChild(g); lx += legendW(k);
   }
 
+  const body = el("g", { transform: `translate(0 ${dy})` });
+  svg.appendChild(body);
   const lines = el("g", { stroke: "#4A4A4A", "stroke-width": 1.4, fill: "none" });
-  svg.appendChild(lines);
+  body.appendChild(lines);
 
   // 婚姻線與親子線
   for (const u of L.units) {
@@ -1279,7 +1295,7 @@ function drawChart(fam, result, opts = {}) {
       lines.appendChild(el("line", { x1: Math.min(src.x, ...xs), y1: busY, x2: Math.max(src.x, ...xs), y2: busY }));
       for (const kx of xs) lines.appendChild(el("line", { x1: kx, y1: busY, x2: kx, y2: kids[0].y }));
     }
-    if (coupleMid) svg.appendChild(el("circle", { cx: coupleMid.x, cy: coupleMid.y, r: 3.5, fill: "#4A4A4A" }));
+    if (coupleMid) body.appendChild(el("circle", { cx: coupleMid.x, cy: coupleMid.y, r: 3.5, fill: "#4A4A4A" }));
   }
 
   // 人物方塊
@@ -1308,6 +1324,7 @@ function drawChart(fam, result, opts = {}) {
       rows.push({ t, size: last ? 12.5 : kind === "renounced" ? 11.5 : 10.5, weight: last || kind === "renounced" ? 700 : 400,
         ink: kind === "renounced" || (t.includes("拋棄") || t.includes("喪失")) ? "#9C1F16" : null });
     });
+    if (info[p.id].scaleLine) rows.push({ t: info[p.id].scaleLine, size: 10.5, weight: 600, ink: "#2F4A8A" });
     const lh = r => r.size + 4;
     const total = rows.reduce((a, r) => a + lh(r), 0);
     let ty = ps.y + (NODE_H - total) / 2;
@@ -1318,24 +1335,24 @@ function drawChart(fam, result, opts = {}) {
       g.appendChild(el("text", { x: ps.x + NODE_W / 2, y: ty - 4, "text-anchor": "middle", "font-size": fit.toFixed(1),
         "font-weight": r.weight || 400, fill: r.ink || (kind === "renounced" ? "#5A2A26" : color) }, r.t));
     }
-    svg.appendChild(g);
+    body.appendChild(g);
   }
 
   // 備註欄
   if (noteBlocks.length) {
     let y = treeBottom + 30;
-    svg.appendChild(el("line", { x1: MARGIN, y1: y, x2: W - MARGIN, y2: y, stroke: "#BBBBBB", "stroke-width": 1 }));
-    svg.appendChild(el("text", { x: MARGIN, y: y + 28, "font-size": 15, "font-weight": 700, fill: "#1A1A1A" }, "備註"));
+    body.appendChild(el("line", { x1: MARGIN, y1: y, x2: W - MARGIN, y2: y, stroke: "#BBBBBB", "stroke-width": 1 }));
+    body.appendChild(el("text", { x: MARGIN, y: y + 28, "font-size": 15, "font-weight": 700, fill: "#1A1A1A" }, "備註"));
     y += 46;
     for (const b of noteBlocks) {
       const ink = b.kind === "renounced" || b.kind === "lost" ? "#9C1F16" : "#333";
-      svg.appendChild(el("text", { x: MARGIN, y: y + 14, "font-size": NOTE_SIZE, "font-weight": 700, fill: ink }, `※${b.n}`));
-      b.lines.forEach((ln, i) => svg.appendChild(el("text", { x: MARGIN + 34, y: y + 14 + i * NOTE_LH, "font-size": NOTE_SIZE, fill: ink }, ln)));
+      body.appendChild(el("text", { x: MARGIN, y: y + 14, "font-size": NOTE_SIZE, "font-weight": 700, fill: ink }, `※${b.n}`));
+      b.lines.forEach((ln, i) => body.appendChild(el("text", { x: MARGIN + 34, y: y + 14 + i * NOTE_LH, "font-size": NOTE_SIZE, fill: ink }, ln)));
       y += b.lines.length * NOTE_LH + 4;
     }
   }
 
-  svg.appendChild(el("text", { x: MARGIN, y: H - 22, "font-size": 11, fill: "#777" },
+  body.appendChild(el("text", { x: MARGIN, y: H - 22 - dy, "font-size": 11, fill: "#777" },
     "本表由離線系統依現行民法自動產生，僅供承辦參考，應與戶籍資料逐一核對後使用。"));
   return svg;
 }
@@ -2735,14 +2752,7 @@ function compute() {
   out.replaceChildren();
   state.last = { fam, result, items };
   const notes = caseNotes(fam, result, items);
-  const wrap = mkEl("div", "chart-wrap");
-  const remarkExtra = {};
-  for (const it of items) {
-    const c = checkOf(it);
-    if (c.status === "yes" && (c.court || c.caseNo)) remarkExtra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
-    if (c.status === "claimed") remarkExtra[it.pid] = "（已聲明拋棄，待核實法院文件）";
-  }
-  wrap.appendChild(drawChart(fam, result, { note: notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "", remarkExtra }));
+  const wrap = eventCharts(fam, result, items, notes);
   const treeView = mkEl("div", "view-tree"), formView = mkEl("div", "view-form");
   treeView.append(wrap, renouncePanel(fam, result, items, pending), shareTable(fam, result, items), rulesSection(fam, result), stepLog(fam, result));
   const fd = formData(fam, result, items, notes);
@@ -2763,6 +2773,69 @@ function compute() {
   out.append(tabs, treeView, formView);
   setView(state.view);
   $("#btn-print").disabled = $("#btn-svg").disabled = $("#btn-xlsx").disabled = false;
+}
+
+/* ---------- 分次繼承系統表：每一次死亡（原繼承＋各層再轉繼承）各一張 ---------- */
+function inheritanceEvents(result) {
+  const out = [];
+  const walk = (res, scale, from) => {
+    out.push({ res, scale, from });
+    for (const s of res.shares) {
+      if (res.retransfers[s.id]) walk(res.retransfers[s.id], scale.mul(s.share), { parent: res.decedentId, share: s.share });
+    }
+  };
+  walk(result, new Frac(1), null);
+  return out;
+}
+function eventCharts(fam, result, items, notes) {
+  const events = inheritanceEvents(result);
+  const root = fam.p[result.decedentId];
+  const note = notes.length ? `※ ${notes.join("、")}，本表尚非最終結果` : "";
+  const box = mkEl("div", "event-box");
+  const tabs = mkEl("div", "event-tabs no-print");
+  if (events.length > 1) {
+    tabs.appendChild(mkEl("span", "event-label", `本案共 ${events.length} 次繼承：`));
+    box.appendChild(tabs);
+  }
+  const charts = events.map((ev, i) => {
+    const did = ev.res.decedentId, dec = fam.p[did];
+    const extra = {};
+    for (const it of items.filter(x => x.target === did)) {
+      const c = checkOf(it);
+      if (c.status === "yes" && (c.court || c.caseNo)) extra[it.pid] = `（${[c.court, c.caseNo].filter(Boolean).join(" ")}）`;
+      if (c.status === "claimed") extra[it.pid] = "（已聲明拋棄，待核實法院文件）";
+    }
+    let chartFam = fam, opts = { note, remarkExtra: extra };
+    if (ev.from) {
+      // 再轉繼承：稱謂改以該次的被繼承人為準
+      const T = autoTitles(Object.values(fam.p), did);
+      chartFam = new Family(Object.values(fam.p).map(p => ({ ...p, title: T[p.id] || "" })));
+      const parent = fam.p[ev.from.parent];
+      opts = { ...opts, title: "繼承系統表（再轉繼承）", scale: ev.scale, scaleName: root.name,
+        scope: `第 ${i + 1} 次繼承：${dec.name}於${roc(dec.death)}死亡，就其自${parent.name}遺產取得之應繼分 ${ev.from.share}` +
+          (ev.from.parent !== root.id ? `（占${root.name}遺產 ${ev.scale}）` : "") + `，由其繼承人再轉繼承。方塊中藍字為占${root.name}遺產之比例。` };
+    } else if (events.length > 1) {
+      opts = { ...opts, scope: `第 1 次繼承：${root.name}於${roc(root.death)}死亡。其後有 ${events.length - 1} 位繼承人於遺產分割前死亡，另見後續各張再轉繼承系統表。` };
+    }
+    const wrap = mkEl("div", "chart-wrap event-chart");
+    wrap.dataset.ev = String(i);
+    wrap.appendChild(drawChart(chartFam, ev.res, opts));
+    if (events.length > 1) {
+      const b = mkEl("button", "", `${"①②③④⑤⑥⑦⑧⑨⑩"[i] || i + 1} ${dec.name}（${isoToRoc(dec.death)}歿）${ev.from ? "・再轉繼承" : "・原繼承"}`);
+      b.type = "button"; b.dataset.ev = String(i);
+      b.addEventListener("click", () => showEvent(i));
+      tabs.appendChild(b);
+    }
+    return wrap;
+  });
+  const showEvent = i => {
+    state.eventIdx = i;
+    charts.forEach((c, k) => c.classList.toggle("inactive", k !== i));
+    for (const b of tabs.querySelectorAll("button")) b.classList.toggle("active", b.dataset.ev === String(i));
+  };
+  box.append(...charts);
+  showEvent(Math.min(state.eventIdx || 0, charts.length - 1));
+  return box;
 }
 
 /* 案件尚未確定的原因（樹狀圖、表格式、Excel 共用） */
@@ -3062,6 +3135,13 @@ function init() {
     showMessages([]); renderTable(); schedule();
   });
   $("#btn-demo").addEventListener("click", demoStep);
+  $("#btn-sample3").addEventListener("click", async () => {
+    if (hasData() && !await askConfirm("載入三代綜合案例會取代目前的資料，確定嗎？")) return;
+    loadData(JSON.parse($("#sample-3gen").textContent));
+    state.eventIdx = 0; state.view = "tree";
+    showMessages([{ cls: "info", title: "三代綜合案例（虛構）：陳國華死亡後，長女陳美玲已先死亡（由其子女代位）、次女陳美珍拋棄繼承（其子女不代位）、次男陳志豪於遺產分割前死亡（再轉繼承，其女陳思妤僅拋棄再轉部分）。請在下方「繼承系統表」切換第 1、第 2 次繼承。" }]);
+    renderTable(); schedule();
+  });
   $("#btn-clear").addEventListener("click", async () => {
     if (!hasData() || !await askConfirm("確定清除全部資料？此動作無法復原。")) return;
     resetCase(); showMessages([]); $("#btn-demo").textContent = "戶籍匯入範例"; renderTable(); schedule();
@@ -3078,7 +3158,7 @@ function init() {
   $("#btn-xlsx").addEventListener("click", exportXlsx);
   $("#chk-uid").addEventListener("change", e => { state.showFullUid = e.target.checked; compute(); });
   $("#btn-svg").addEventListener("click", () => {
-    const svg = document.querySelector(".chart-wrap svg"); if (!svg) return;
+    const svg = document.querySelector(".view-tree .event-chart:not(.inactive) svg") || document.querySelector(".chart-wrap svg"); if (!svg) return;
     const dec = byId(state.decedent);
     download(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }), safeName("繼承系統表", "svg"));
   });

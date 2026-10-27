@@ -1,0 +1,35 @@
+{
+  "_說明": "三代綜合案例（全部虛構）：代位繼承、再轉繼承、拋棄繼承（含僅拋棄再轉部分）",
+  "decedent": "X",
+  "queried": ["X", "C2", "C3", "C4"],
+  "persons": [
+    {"id": "X",   "name": "陳國華", "gender": "M", "birth": "1945-04-02", "death": "2025-03-10", "spouse": "W",
+     "uid": "A000001001"},
+    {"id": "W",   "name": "林秀蘭", "gender": "F", "birth": "1948-06-15", "uid": "A000001002",
+     "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}},
+
+    {"id": "C1",  "name": "陳志明", "gender": "M", "birth": "1970-01-12", "father": "X", "mother": "W", "uid": "A000001011",
+     "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}},
+
+    {"id": "C2",  "name": "陳志豪", "gender": "M", "birth": "1973-05-20", "death": "2025-08-01", "father": "X", "mother": "W",
+     "spouse": "C2W", "uid": "A000001012"},
+    {"id": "C2W", "name": "吳雅芳", "gender": "F", "birth": "1975-02-03", "uid": "A000001021",
+     "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}},
+    {"id": "G1",  "name": "陳柏翰", "gender": "M", "birth": "2000-03-03", "father": "C2", "mother": "C2W", "uid": "A000001031",
+     "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}},
+    {"id": "G2",  "name": "陳思妤", "gender": "F", "birth": "2003-07-07", "father": "C2", "mother": "C2W", "uid": "A000001032",
+     "renounceChecks": {"C2": {"status": "yes", "court": "臺灣新北地方法院", "caseNo": "114年度司繼字第987號", "checkedOn": "114/10/20"}}},
+
+    {"id": "C3",  "name": "陳美玲", "gender": "F", "birth": "1976-09-09", "death": "2016-04-01", "father": "X", "mother": "W",
+     "spouse": "C3H", "uid": "A000001013"},
+    {"id": "C3H", "name": "黃建宏", "gender": "M", "birth": "1974-12-24", "uid": "A000001022"},
+    {"id": "G3",  "name": "黃子軒", "gender": "M", "birth": "2001-01-01", "father": "C3H", "mother": "C3", "uid": "A000001033",
+     "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}},
+    {"id": "G4",  "name": "黃子涵", "gender": "F", "birth": "2004-02-02", "father": "C3H", "mother": "C3", "uid": "A000001034",
+     "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}},
+
+    {"id": "C4",  "name": "陳美珍", "gender": "F", "birth": "1979-11-11", "father": "X", "mother": "W", "uid": "A000001014",
+     "renounceChecks": {"X": {"status": "yes", "court": "臺灣臺北地方法院", "caseNo": "114年度司繼字第321號", "checkedOn": "114/6/2"}}},
+    {"id": "G5",  "name": "李小美", "gender": "F", "birth": "2008-08-08", "mother": "C4", "uid": "A000001035"}
+  ]
+}
