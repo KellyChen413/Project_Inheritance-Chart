@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 安全政策：禁止載入或連線到任何外部位址；以雜湊值只允許本檔案內既有的程式與樣式執行（由 web/build.py 產生時自動計算） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-EmLvtdjHQwgvLQW+LgvbEBFLjvjeGuZnp3IPdsdt0Dw='; style-src 'sha256-FqRcHoW6VaApqY5oYJC6noenMUAGPmSbBl3i0GScRKs='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-QEf+XxPEakTbbhPkh9suAX4aqxnc1BdSYzL22En8ayY='; style-src 'sha256-ijHIOktrATYrwIHP2TQGvtpUssN0QzwpfvTfUBOuks0='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>繼承系統表產生器</title>
@@ -317,6 +317,10 @@ dialog#map-dialog, dialog#confirm-dialog, dialog#tx-dialog {
   background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg);
 }
 dialog#confirm-dialog { width: min(440px, calc(100vw - 32px)); }
+.lost-cell { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 150px; }
+.lost-cell select { font-size: 13px; }
+.lost-cell .forgive { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.lost-cell .forgive[hidden] { display: none; }
 dialog#tx-dialog { width: min(1000px, calc(100vw - 32px)); }
 .tx-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-bottom: 14px; }
 .tx-person { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 12px; background: var(--surface-2); }
@@ -452,7 +456,7 @@ footer.note {
       <li><b>變更註記：</b>「統號變更註記」「姓名變更註記」為空白表示沒有變更；為「*」表示曾經變更，但匯出檔沒有寫出舊統號或舊名，系統會在匯入訊息與待辦清單提醒人工確認（例如子女資料上的母親姓名是舊名）。父母配偶有填統號時，仍以統號連結，不受改名影響。</li>
       <li><b>CSV 匯入：</b>按「下載 CSV 範本」用 Excel 填寫，存檔後按「匯入資料」。父、母、配偶直接填姓名；有同名者改填「編號」欄的編號。拋棄、喪失欄填「是」代表對被繼承人；再轉部分的拋棄填該再轉被繼承人的姓名。稱謂填「被繼承人」的那一列即為被繼承人。Excel 一般 CSV（Big5）與 CSV UTF-8 都能讀取。</li>
       <li><b>Excel 日期注意：</b>在 Excel 輸入「37/5/12」這類兩位數民國年，會被自動改成西元 1937 年。民國 100 年以前的日期請寫成「民國37年5月12日」或西元「1948/5/12」，或先將日期欄設為文字格式。</li>
-      <li>「喪失」欄是指對目前選定之被繼承人喪失繼承權（第1145條）。拋棄繼承請在「拋棄繼承查證」登錄，含再轉部分的拋棄。</li>
+      <li><b>喪失繼承權（民法第1145條）：</b>在「喪失繼承權」欄選擇事由款別：第1款故意致被繼承人或應繼承人於死（或未致死但受刑之宣告）、第2款詐欺脅迫使為或撤回變更遺囑、第3款詐欺脅迫妨害遺囑、第4款偽造變造隱匿湮滅遺囑、第5款重大虐待侮辱且經被繼承人表示不得繼承。第2至4款可勾選「經宥恕」，繼承權不喪失（第1145條第2項）；第1款、第5款不適用宥恕。喪失繼承權者，其直系血親卑親屬得代位繼承（第1140條），配偶不得代位；系統表備註會寫出款別。此欄指對目前選定之被繼承人；拋棄繼承請在「拋棄繼承查證」登錄。CSV 的「喪失」欄可填「是」或「第1款」「第3款，經宥恕」。</li>
       <li><b>資安設計：</b>不使用 localStorage、sessionStorage、IndexedDB 或 Cookie；輸入框關閉瀏覽器自動填入紀錄；離開或重新整理頁面時主動清空記憶體中的資料；畫面一律以 textContent 輸出文字，不使用 innerHTML，防範 XSS；下載檔名只含日期、不含姓名，避免下載資料夾的檔案列表洩漏個資。</li>
       <li><b>胎兒：</b>繼承開始時已受胎、尚未出生者，在出生日期下方將胎兒狀態設為「待出生」，系統依民法第7條、第1166條保留其應繼分，並標示本表尚非最終結果；出生後改為「已活產」並填出生日期；死產者設為「死產」，系統會重新計算。</li>
       <li><b>同日死亡：</b>繼承人與被繼承人同日死亡時，可在死亡日期下方填寫時間（24 小時制）判斷先後；未填時依民法第11條推定同時死亡，並列為待確認事項。同時死亡者的子女仍得代位繼承（通說）。</li>
@@ -488,7 +492,7 @@ footer.note {
       <table id="people">
         <colgroup><col><col class="c-title"><col class="c-name"><col class="c-uid"><col class="c-g"><col class="c-date"><col class="c-date">
           <col class="c-rel"><col class="c-rel"><col class="c-rel"><col class="c-chk"><col class="c-del"></colgroup>
-        <thead><tr><th></th><th>稱謂（對被繼承人）</th><th>姓名</th><th>統一編號</th><th>性別</th><th>出生日期</th><th>死亡日期</th><th>父</th><th>母</th><th>配偶</th><th>喪失</th><th></th></tr></thead>
+        <thead><tr><th></th><th>稱謂（對被繼承人）</th><th>姓名</th><th>統一編號</th><th>性別</th><th>出生日期</th><th>死亡日期</th><th>父</th><th>母</th><th>配偶</th><th title="民法第1145條">喪失繼承權</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -596,6 +600,25 @@ const ONE = new Frac(1), ZERO = new Frac(0);
 
 /* 規則版本：離線工具長期使用時，用來確認適用的規則是否需要更新 */
 const RULE_VERSION = "現行民法繼承編（規則版本 2026.10.27）";
+
+/* 民法第1145條第1項各款；第2項：第2款至第4款經被繼承人宥恕者，繼承權不喪失 */
+const LOST_CLAUSES = {
+  "1": "故意致被繼承人或應繼承人於死或雖未致死因而受刑之宣告",
+  "2": "以詐欺或脅迫使被繼承人為關於繼承之遺囑，或使其撤回或變更之",
+  "3": "以詐欺或脅迫妨害被繼承人為關於繼承之遺囑，或妨害其撤回或變更之",
+  "4": "偽造、變造、隱匿或湮滅被繼承人關於繼承之遺囑",
+  "5": "對於被繼承人有重大之虐待或侮辱情事，經被繼承人表示其不得繼承",
+};
+const LOST_FORGIVABLE = new Set(["2", "3", "4"]);
+/* 依登錄內容判斷是否喪失：{ clause, forgiven } → true／false */
+function lostEffective(info) {
+  if (!info || !info.clause) return !!info;                 // 未填款別：沿用「喪失」勾選
+  return !(info.forgiven && LOST_FORGIVABLE.has(String(info.clause)));
+}
+function lostBasisText(info) {
+  const c = info && info.clause ? String(info.clause) : "";
+  return c && LOST_CLAUSES[c] ? `民法第1145條第1項第${c}款（${LOST_CLAUSES[c]}）` : "民法第1145條";
+}
 
 /* 適用法律的時點檢查：本系統只實作現行民法
  * - 民國34年10月25日前開始之繼承：依日據時期臺灣之習慣（如戶主繼承），本系統不計算
@@ -945,7 +968,7 @@ function buildRemarks(fam, result) {
           text: `對${dname}之遺產拋棄繼承，不參與該部分之再轉繼承（民法第1174條）` +
             (final[pid] ? "；但仍保有其本身對原被繼承人之應繼分。" : "。") };
         else if (note === "喪失繼承權") R[pid] = { kind: "lost", tag: `喪失${dname}之繼承權`,
-          text: `對${dname}喪失繼承權（民法第1145條），不參與該部分之再轉繼承。` };
+          text: `對${dname}喪失繼承權（${lostBasisText((p.lostDetail || {})[did])}），不參與該部分之再轉繼承。` };
         continue;
       }
       switch (note) {
@@ -956,7 +979,7 @@ function buildRemarks(fam, result) {
           break;
         case "喪失繼承權":
           R[pid] = { kind: "lost", tag: rep ? "喪失繼承權・由子女代位" : "喪失繼承權・無繼承權",
-            text: "依民法第1145條喪失繼承權，" + (rep ? `由其直系血親卑親屬${names(rep)}代位繼承其應繼分（第1140條）。` : "且無直系血親卑親屬可代位繼承。") };
+            text: `依${lostBasisText((p.lostDetail || {})[did])}喪失繼承權，` + (rep ? `由其直系血親卑親屬${names(rep)}代位繼承其應繼分（第1140條）。` : "且無直系血親卑親屬可代位繼承。") };
           break;
         case "繼承開始前死亡":
           if (rep) R[pid] = { kind: "predeceased", tag: "繼承開始前死亡・由子女代位",
@@ -1031,7 +1054,12 @@ function applicableRules(fam, result) {
     text: "繼承人得於知悉其得繼承之時起三個月內拋棄繼承權，拋棄之效力溯及於繼承開始時。拋棄者之應繼分歸屬其他同為繼承之人；" +
       "第一順序繼承人中親等近者均拋棄時，由次親等之直系血親卑親屬繼承。" });
   if (anyNote("喪失繼承權")) rules.push({ title: "喪失繼承權（民法第1145條）",
-    text: "繼承人有民法第1145條第1項各款情事者喪失其繼承權；其直系血親卑親屬得代位繼承。" });
+    text: "繼承人有下列各款情事之一者，喪失其繼承權：" + Object.entries(LOST_CLAUSES).map(([k, v]) => `（${"一二三四五"[k - 1]}）${v}者`).join("；") +
+      "。前項第二款至第四款之規定，如經被繼承人宥恕者，其繼承權不喪失。喪失繼承權者，其直系血親卑親屬得代位繼承（第1140條）。" });
+  const forgiven = Object.values(fam.p).filter(p => Object.entries(p.lostDetail || {}).some(([d, i]) => i && i.forgiven && LOST_FORGIVABLE.has(String(i.clause))));
+  if (forgiven.length) rules.push({ title: "喪失繼承權之宥恕（民法第1145條第2項）",
+    text: forgiven.map(p => Object.entries(p.lostDetail).filter(([, i]) => i && i.forgiven).map(([d, i]) =>
+      `${p.name}對${fam.p[d] ? fam.p[d].name : "被繼承人"}雖有第1145條第1項第${i.clause}款情事，經被繼承人宥恕，其繼承權不喪失`).join("；")).join("；") + "。" });
   if (anyNote("拋棄繼承") && all.some(r => r.log.some(l => l.includes("第1176條第5項")))) rules.push({ title: "次親等遞補（民法第1176條第5項）",
     text: "第一順序之繼承人，其親等近者均拋棄繼承權時，由次親等之直系血親卑親屬繼承，按人數平均。繼承開始前死亡且無人代位、尚未出生或死產者，本非繼承人，不列入「均拋棄」的判斷。" });
   if (Object.values(fam.p).some(p => p.fetus)) rules.push({ title: "胎兒之權利（民法第7條、第1166條）",
@@ -1124,7 +1152,7 @@ function validate(persons, decedentId) {
   return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
 }
 
-// module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime };
+// module.exports = { Frac, parseDate, roc, Family, InheritanceEngine, finalShares, validate, buildRemarks, applicableRules, RULE_VERSION, STATE, legalRegime, LOST_CLAUSES, LOST_FORGIVABLE, lostEffective, lostBasisText };
 
 /* ============================================================
  * 繼承系統表 SVG 樹狀圖（自製排版，不依賴任何外部套件）
@@ -1537,7 +1565,16 @@ function importCsv(text) {
     p.mother = resolve(get(r, "mother"), p, "母");
     p.spouse = resolve(get(r, "spouse"), p, "配偶");
     p.renounced = listOf(get(r, "renounced"), p, "拋棄");
-    p.lost_right = listOf(get(r, "lost"), p, "喪失");
+    // 喪失欄：「是」或款別（如「第1款」「第3款，經宥恕」）；第2～4款經宥恕者繼承權不喪失（民法第1145條第2項）
+    const lostRaw = get(r, "lost");
+    const cm = lostRaw.match(/第?\s*([1-5一二三四五])\s*款/);
+    if (cm && decedent) {
+      const clause = String("一二三四五".indexOf(cm[1]) + 1 || cm[1]);
+      const forgiven = /宥恕/.test(lostRaw) && ["2", "3", "4"].includes(clause);
+      if (/宥恕/.test(lostRaw) && !forgiven) warnings.push(`第 ${p._row} 列（${p.name}）：第${clause}款不適用宥恕（民法第1145條第2項限第2至4款），仍喪失繼承權`);
+      p.lostChecks = { [decedent]: { clause, forgiven } };
+      p.lost_right = forgiven ? [] : [decedent];
+    } else p.lost_right = listOf(lostRaw, p, "喪失");
     for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
       if (p[k] && _parseDate(p[k]) === undefined) warnings.push(`第 ${p._row} 列（${p.name}）：${label}「${p[k]}」格式無法辨識，匯入後請修正`);
     }
@@ -1565,12 +1602,17 @@ function exportCsv(persons, decedent) {
     return y > 1911 ? `民國${y - 1911}年${m}月${dd}日` : `${y}/${m}/${dd}`;   // 用中文日期，避免 Excel 誤判兩位數民國年
   };
   const marks = list => list.map(t => (t === decedent ? "是" : ref(t))).filter(Boolean).join("、");
+  const lostMark = p => {
+    const info = (p.lostChecks || {})[decedent];
+    const main = info ? (info.clause ? `第${info.clause}款${info.forgiven ? "（經宥恕）" : ""}` : "是") : "";
+    return [main, marks((p.lost_right || []).filter(t => t !== decedent))].filter(Boolean).join("、");
+  };
   const esc = v => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [["編號", "稱謂", "姓名", "性別", "出生日期", "死亡日期", "父", "母", "配偶", "拋棄", "喪失"]];
   for (const p of persons) {
     lines.push([p.id, p.title || "", p.name || "", p.gender === "M" ? "男" : p.gender === "F" ? "女" : "",
       rocText(p.birth), rocText(p.death), ref(p.father), ref(p.mother), ref(p.spouse),
-      marks(p.renounced || []), marks(p.lost_right || [])]);
+      marks(p.renounced || []), lostMark(p)]);
   }
   return "﻿" + lines.map(r => r.map(v => esc(String(v))).join(",")).join("\r\n") + "\r\n";
 }
@@ -2801,6 +2843,9 @@ function loadData(raw) {
       fatherName: r.fatherName || "", motherName: r.motherName || "", spouseName: r.spouseName || "",
       renounceChecks: r.renounceChecks && typeof r.renounceChecks === "object" ? r.renounceChecks : {},
       lost_right: Array.isArray(r.lost_right) ? r.lost_right.map(String) : [],
+      lostChecks: Object.fromEntries(Object.entries(r.lostChecks && typeof r.lostChecks === "object" ? r.lostChecks : {})
+        .filter(([, i]) => i && typeof i === "object" && /^[1-5]?$/.test(String(i.clause || "")))
+        .map(([d, i]) => [String(d), { clause: String(i.clause || ""), forgiven: !!i.forgiven && LOST_FORGIVABLE.has(String(i.clause)) }])),
       sources: Array.isArray(r.sources) ? r.sources : [],
     });
     for (const t of Array.isArray(r.renounced) ? r.renounced : []) p.renounceChecks[String(t)] ||= { status: "yes" };
@@ -2844,6 +2889,22 @@ function download(blob, name) {
   a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- 喪失繼承權登錄 ----------
+ * p.lostChecks[did] = { clause: "1"～"5"（空白＝未填款別）, forgiven }；p.lost_right 只留「實際喪失」者，供計算與匯出
+ */
+function lostInfoOf(p, did) {
+  if (!did) return null;
+  const rec = (p.lostChecks || {})[did];
+  if (rec) return rec;
+  return (p.lost_right || []).includes(did) ? { clause: "", forgiven: false } : null;
+}
+function setLostInfo(p, did, info) {
+  p.lostChecks ||= {};
+  if (info) p.lostChecks[did] = info; else delete p.lostChecks[did];
+  p.lost_right = (p.lost_right || []).filter(x => x !== did);
+  if (info && lostEffective(info)) p.lost_right.push(did);
 }
 
 /* ---------- 訊息 ---------- */
@@ -3290,17 +3351,31 @@ function renderTable() {
       if (nm && !p[rel]) { const h = document.createElement("small"); h.className = "note"; h.textContent = `戶籍記載：${nm}`; h.title = "此人不在名單中；如與繼承有關，請調閱其資料"; cell.appendChild(h); }
     }
 
-    const c = document.createElement("input");
-    c.type = "checkbox";
-    c.checked = !!state.decedent && p.lost_right.includes(state.decedent);
-    c.disabled = !state.decedent || p.id === state.decedent;
-    c.title = "對被繼承人喪失繼承權（第1145條）";
-    c.addEventListener("change", () => {
-      p.lost_right = p.lost_right.filter(x => x !== state.decedent);
-      if (c.checked) p.lost_right.push(state.decedent);
+    // 喪失繼承權（民法第1145條）：選款別；第2～4款可勾選「經宥恕」
+    const lostCell = document.createElement("div"); lostCell.className = "lost-cell";
+    const sel = document.createElement("select");
+    sel.disabled = !state.decedent || p.id === state.decedent;
+    sel.title = "對目前被繼承人喪失繼承權的事由（民法第1145條第1項）";
+    const info = lostInfoOf(p, state.decedent);
+    for (const [v, t] of [["", "—"], ...(info && !info.clause ? [["?", "喪失（款別未填）"]] : []),
+      ...Object.entries(LOST_CLAUSES).map(([k, v]) => [k, `第${k}款 ${v.length > 14 ? v.slice(0, 14) + "…" : v}`])]) {
+      const o = document.createElement("option"); o.value = v; o.textContent = t; if (v !== "" && v !== "?") o.title = LOST_CLAUSES[v]; sel.appendChild(o);
+    }
+    sel.value = !info ? "" : info.clause || "?";
+    const fg = document.createElement("label"); fg.className = "small forgive";
+    const fc = document.createElement("input"); fc.type = "checkbox"; fc.checked = !!(info && info.forgiven);
+    fg.append(fc, document.createTextNode(" 經宥恕"));
+    fg.title = "第2款至第4款經被繼承人宥恕者，繼承權不喪失（民法第1145條第2項）";
+    fg.hidden = !(info && LOST_FORGIVABLE.has(info.clause));
+    const save = () => {
+      const v = sel.value;
+      setLostInfo(p, state.decedent, v === "" ? null : { clause: v === "?" ? "" : v, forgiven: LOST_FORGIVABLE.has(v) && fc.checked });
+      fg.hidden = !LOST_FORGIVABLE.has(v);
       schedule();
-    });
-    td(c, "center");
+    };
+    sel.addEventListener("change", save); fc.addEventListener("change", save);
+    lostCell.append(sel, fg);
+    td(lostCell, "center");
 
     const del = document.createElement("button");
     del.type = "button"; del.className = "icon-btn"; del.title = "刪除這一列"; del.textContent = "✕";
@@ -3385,7 +3460,7 @@ function enginePersons() {
     marriageEnd: parseDate(p.marriageEndRaw), _marriageEndRaw: (p.marriageEndRaw || "").trim(),
     father: p.father || null, mother: p.mother || null, spouse: p.spouse || null,
     fatherName: p.fatherName || "", motherName: p.motherName || "", changeNotes: p.changeNotes || [],
-    renounced: renouncedOf(p), lost_right: p.lost_right,
+    renounced: renouncedOf(p), lost_right: p.lost_right, lostDetail: p.lostChecks || {},
   }));
 }
 function mkEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }

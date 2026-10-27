@@ -138,7 +138,16 @@ function importCsv(text) {
     p.mother = resolve(get(r, "mother"), p, "母");
     p.spouse = resolve(get(r, "spouse"), p, "配偶");
     p.renounced = listOf(get(r, "renounced"), p, "拋棄");
-    p.lost_right = listOf(get(r, "lost"), p, "喪失");
+    // 喪失欄：「是」或款別（如「第1款」「第3款，經宥恕」）；第2～4款經宥恕者繼承權不喪失（民法第1145條第2項）
+    const lostRaw = get(r, "lost");
+    const cm = lostRaw.match(/第?\s*([1-5一二三四五])\s*款/);
+    if (cm && decedent) {
+      const clause = String("一二三四五".indexOf(cm[1]) + 1 || cm[1]);
+      const forgiven = /宥恕/.test(lostRaw) && ["2", "3", "4"].includes(clause);
+      if (/宥恕/.test(lostRaw) && !forgiven) warnings.push(`第 ${p._row} 列（${p.name}）：第${clause}款不適用宥恕（民法第1145條第2項限第2至4款），仍喪失繼承權`);
+      p.lostChecks = { [decedent]: { clause, forgiven } };
+      p.lost_right = forgiven ? [] : [decedent];
+    } else p.lost_right = listOf(lostRaw, p, "喪失");
     for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
       if (p[k] && _parseDate(p[k]) === undefined) warnings.push(`第 ${p._row} 列（${p.name}）：${label}「${p[k]}」格式無法辨識，匯入後請修正`);
     }
@@ -166,12 +175,17 @@ function exportCsv(persons, decedent) {
     return y > 1911 ? `民國${y - 1911}年${m}月${dd}日` : `${y}/${m}/${dd}`;   // 用中文日期，避免 Excel 誤判兩位數民國年
   };
   const marks = list => list.map(t => (t === decedent ? "是" : ref(t))).filter(Boolean).join("、");
+  const lostMark = p => {
+    const info = (p.lostChecks || {})[decedent];
+    const main = info ? (info.clause ? `第${info.clause}款${info.forgiven ? "（經宥恕）" : ""}` : "是") : "";
+    return [main, marks((p.lost_right || []).filter(t => t !== decedent))].filter(Boolean).join("、");
+  };
   const esc = v => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [["編號", "稱謂", "姓名", "性別", "出生日期", "死亡日期", "父", "母", "配偶", "拋棄", "喪失"]];
   for (const p of persons) {
     lines.push([p.id, p.title || "", p.name || "", p.gender === "M" ? "男" : p.gender === "F" ? "女" : "",
       rocText(p.birth), rocText(p.death), ref(p.father), ref(p.mother), ref(p.spouse),
-      marks(p.renounced || []), marks(p.lost_right || [])]);
+      marks(p.renounced || []), lostMark(p)]);
   }
   return "﻿" + lines.map(r => r.map(v => esc(String(v))).join(",")).join("\r\n") + "\r\n";
 }

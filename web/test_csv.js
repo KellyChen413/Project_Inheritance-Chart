@@ -15,6 +15,31 @@ const sample = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/sample_f
 const expected = { 王志強: "1/4", 王小安: "1/8", 王小平: "1/8", 張小宇: "1/8", 張建國: "1/8", 林美華: "1/4" };
 
 const cases = {
+  "喪失繼承權第1145條：款別、宥恕、代位、備註": () => {
+    const csv = ["稱謂,姓名,性別,出生日期,死亡日期,父,母,配偶,喪失",
+      "被繼承人,甲父,男,0400101,1140101,,,,",
+      "長男,乙子,男,0650101,,甲父,,,第1款",
+      "長男之子,乙孫,男,0900101,,乙子,,,",
+      "次男,丙子,男,0670101,,甲父,,,第3款，經宥恕",
+      "長女,丁女,女,0690101,,甲父,,,第5款，經宥恕"].join("\n");
+    const { data, warnings } = importCsv(csv);
+    assert.ok(warnings.some(w => w.includes("第5款不適用宥恕")));
+    // 乙子喪失 → 乙孫代位；丙子第3款經宥恕 → 仍繼承；丁女第5款不適用宥恕 → 喪失且無子女
+    assert.deepStrictEqual(shares(data), { 乙孫: "1/2", 丙子: "1/2" });
+    const { buildRemarks, applicableRules } = require("./engine.js");
+    const persons = data.persons.map(p => ({ ...p, birth: parseDate(p.birth) || null, death: parseDate(p.death) || null, lostDetail: p.lostChecks || {} }));
+    const fam = new Family(persons);
+    const res = new InheritanceEngine(fam).distribute(data.decedent);
+    const R = buildRemarks(fam, res);
+    const id = n => persons.find(p => p.name === n).id;
+    assert.ok(R[id("乙子")].text.includes("第1145條第1項第1款") && R[id("乙子")].text.includes("代位"));
+    assert.ok(R[id("丁女")].text.includes("第5款"));
+    const rules = applicableRules(fam, res).map(r => r.title + r.text).join("\n");
+    assert.ok(rules.includes("丙子對甲父雖有第1145條第1項第3款情事，經被繼承人宥恕"));
+    // 匯出再匯入保留款別
+    const back = importCsv(exportCsv(data.persons.map(p => ({ ...p })), data.decedent)).data;
+    assert.deepStrictEqual(back.persons.find(p => p.name === "丙子").lostChecks, { [back.decedent]: { clause: "3", forgiven: true } });
+  },
   "匯出再匯入，結果不變": () => {
     const { data, errors } = importCsv(decodeBytes(Buffer.from(exportCsv(sample.persons, sample.decedent))).text);
     assert.deepStrictEqual(errors, []);
