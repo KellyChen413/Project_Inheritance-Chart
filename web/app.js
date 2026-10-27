@@ -273,7 +273,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
         });
         r.insertCell().appendChild(sel);
         const v = f.key in mapping && sample[0] ? String(sample[0][mapping[f.key]] ?? "") : "";
-        r.insertCell().textContent = f.key === "uid" ? maskUid(v) : v;
+        r.insertCell().textContent = /uid$/i.test(f.key) ? maskUid(v) : v;
       }
       body.appendChild(t);
 
@@ -289,7 +289,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
           const r = pb.insertRow();
           for (const f of prevFields) {
             let v = String(row[mapping[f.key]] ?? "").trim();
-            if (f.key === "uid") v = maskUid(v);
+            if (/uid$/i.test(f.key)) v = maskUid(v);
             if ((f.key === "birth" || f.key === "death") && parseDate(v)) v = roc(parseDate(v));
             r.insertCell().textContent = v;
           }
@@ -376,6 +376,13 @@ function renderTable() {
       }
       if (field === "name" && p.sources && p.sources.length) {
         const s = document.createElement("small"); s.className = "src"; s.textContent = `來源：${p.sources.length} 份`; s.title = p.sources.join("\n"); wrap.appendChild(s);
+      }
+      if (field === "name" && p.nameAliases && p.nameAliases.length) {
+        const s = document.createElement("small"); s.className = "note"; s.textContent = `曾用名：${p.nameAliases.join("、")}`;
+        s.title = (p.changeNotes || []).join("\n"); wrap.appendChild(s);
+      }
+      if (field === "uid" && !p.uid && p.mergeKey) {
+        const s = document.createElement("small"); s.className = "note"; s.textContent = "無統號（以姓名＋生日識別）"; wrap.appendChild(s);
       }
       return wrap;
     };

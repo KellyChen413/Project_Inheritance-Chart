@@ -17,7 +17,14 @@ F = "MSung-Light"
 
 # 範例1：二親等資料，2 頁、每頁重複表頭、頁碼、一格換行
 rows = list(csv.reader(open(ROOT / "data/範例1_王大明_二親等資料.csv", encoding="utf-8-sig")))
-head, data = rows[0], rows[1:]
+# PDF 範例沿用較精簡的 9 欄版面，示範不同格式也能讀取
+cols = ["稱謂", "姓名", "統一編號", "性別", "出生日期", "死亡日期", "父姓名", "母姓名", "配偶姓名"]
+src = {"父姓名": "父親姓名", "母姓名": "母親姓名"}
+idx = {h: i for i, h in enumerate(rows[0])}
+def pick(r, c):
+    if c == "性別": return {"長男": "男", "次男": "男", "弟": "男", "孫": "男", "外孫": "男", "長女": "女", "次女": "女", "外孫女": "女", "母": "女", "配偶": "女", "父": "男", "本人": "男"}.get(r[idx["稱謂"]], "")
+    return r[idx[src.get(c, c)]]
+head, data = cols, [[pick(r, c) for c in cols] for r in rows[1:]]
 W, H = landscape(A4)
 xs = [40, 95, 160, 265, 315, 395, 475, 555, 635]
 c = canvas.Canvas(str(OUT / "範例1_王大明_二親等資料.pdf"), pagesize=(W, H))

@@ -17,17 +17,33 @@ const HHR_FIELDS = [
   { key: "name",       label: "姓名", kinds: ["kin", "personal"], required: ["kin", "personal"],
     syn: ["姓名", "名字", "本人姓名", "親屬姓名"] },
   { key: "uid",        label: "統一編號", kinds: ["kin", "personal"], required: ["kin", "personal"],
-    syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "本人統一編號", "親屬統一編號"] },
+    syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "身分證統號", "本人統一編號", "本人統號", "親屬統一編號"] },
   { key: "gender",     label: "性別", kinds: ["kin", "personal"], syn: ["性別"] },
   { key: "birth",      label: "出生日期", kinds: ["kin", "personal"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
   { key: "death",      label: "死亡日期", kinds: ["kin", "personal"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
   { key: "fatherName", label: "父姓名", kinds: ["kin", "personal"], syn: ["父姓名", "父親姓名", "父", "父親"] },
   { key: "motherName", label: "母姓名", kinds: ["kin", "personal"], syn: ["母姓名", "母親姓名", "母", "母親"] },
   { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal"], syn: ["配偶姓名", "配偶", "配偶名"] },
-  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父身分證統一編號", "父身分證字號"] },
-  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母身分證統一編號", "母身分證字號"] },
-  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
+  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
+  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
+  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
+  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
 ];
+/* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
+const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
+
+/* 從變更註記中找出舊統號、舊姓名，供合併與父母姓名比對使用 */
+function changeAliases(uidNote, nameNote, uid, name) {
+  const uids = [...new Set((String(uidNote || "").toUpperCase().match(/[A-Z][0-9A-Z]\d{8}/g) || []).filter(u => u !== uid))];
+  const names = new Set();
+  const n = String(nameNote || "");
+  for (const m of n.matchAll(/(?:原名|原姓名|舊名|舊姓名|更名前|變更前|原為)[：:\s為]*([\u4e00-\u9fff]{2,6})/g)) names.add(m[1]);
+  for (const m of n.matchAll(/([\u4e00-\u9fff]{2,6})\s*(?:→|->|＞|>|改為|更名為|變更為|改名為)\s*([\u4e00-\u9fff]{2,6})/g)) { names.add(m[1]); names.add(m[2]); }
+  names.delete(name);
+  return { uidAliases: uids, nameAliases: [...names] };
+}
 
 const normHeader = h => String(h || "").replace(/[\s　]/g, "").replace(/（/g, "(").replace(/）/g, ")");
 const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
@@ -71,6 +87,7 @@ function hhrReadTable(text) {
 }
 
 function hhrGuessMapping(headers) {
+  // 「項目」「查看」等為戶役政畫面的序號與操作欄，不對應
   const map = {};
   const norm = headers.map(normHeader);
   const stripped = norm.map(h => h.replace(/\(.*?\)/g, ""));
@@ -103,10 +120,16 @@ function hhrParse(table, mapping, kind) {
   table.body.forEach((r, i) => {
     const line = i + table.headerRow + 1;
     const get = k => (k in mapping ? String(r[mapping[k]] ?? "").trim() : "");
-    const name = get("name"), uid = normUid(get("uid"));
+    const name = get("name");
+    let uid = normUid(get("uid")), noUid = false;
     if (!name && !uid) return;
-    if (!uid) { warnings.push(`第 ${line} 列（${name}）沒有統一編號，已略過`); return; }
     if (!name) { warnings.push(`第 ${line} 列（${maskUid(uid)}）沒有姓名，已略過`); return; }
+    if (!uid) {
+      // 早年死亡者常無統一編號：改以「姓名＋出生日期」識別，跨檔合併時仍可對上
+      const b = hhrDate(get("birth")) || get("birth");
+      uid = `無統號:${name}:${b || "?"}`; noUid = true;
+      warnings.push(`第 ${line} 列（${name}）沒有統一編號，改以姓名與出生日期識別${b ? "" : "（也沒有出生日期，跨檔合併可能不準確）"}`);
+    }
     if (seen.has(uid)) { warnings.push(`第 ${line} 列（${name}）統一編號在本檔重複出現，已略過重複列`); return; }
     seen.add(uid);
     const relation = get("relation").replace(/[\s　]/g, "");
@@ -114,8 +137,12 @@ function hhrParse(table, mapping, kind) {
     const gender = /^(男|M|m|1)$/.test(g) ? "M" : /^(女|F|f|2)$/.test(g) ? "F" : genderFromRelation(relation);
     const rec = { line, uid, name, gender, relation, birth: get("birth"), death: get("death"),
       fatherName: get("fatherName"), motherName: get("motherName"), spouseName: get("spouseName"),
-      fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")) };
-    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
+      fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")),
+      marriageDate: get("marriageDate"), uidNote: get("uidNote"), nameNote: get("nameNote"), noUid };
+    Object.assign(rec, changeAliases(rec.uidNote, rec.nameNote, uid, name));
+    if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
+    if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
     records.push(rec);
@@ -141,20 +168,29 @@ function hhrMerge(persons, parsed, fileName, makeId) {
   const conflicts = [];
   let added = 0, updated = 0;
   const LABEL = { name: "姓名", gender: "性別", birthRaw: "出生日期", deathRaw: "死亡日期",
-    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名" };
+    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期" };
   const same = (a, b) => (hhrDate(a) || a) === (hhrDate(b) || b);
+  const keysOf = x => [normUid(x.uid), x.mergeKey, ...(x.uidAliases || [])].filter(Boolean);
   for (const rec of parsed.records) {
-    let p = persons.find(x => normUid(x.uid) === rec.uid);
+    const want = [rec.uid, ...rec.uidAliases];
+    let p = persons.find(x => keysOf(x).some(k => want.includes(k)));
+    const isNew = !p;
     if (!p) {
-      p = { id: persons.some(x => x.id === rec.uid) ? makeId() : rec.uid, uid: rec.uid, name: "", title: "", titleAuto: true,
+      const id = rec.noUid ? makeId() : (persons.some(x => x.id === rec.uid) ? makeId() : rec.uid);
+      p = { id, uid: rec.noUid ? "" : rec.uid, mergeKey: rec.noUid ? rec.uid : "", name: "", title: "", titleAuto: true,
         gender: "", birthRaw: "", deathRaw: "", father: "", mother: "", spouse: "",
         fatherName: "", motherName: "", spouseName: "", fatherUid: "", motherUid: "", spouseUid: "",
-        renounceChecks: {}, lost_right: [], sources: [] };
+        renounceChecks: {}, lost_right: [], sources: [], uidAliases: [], nameAliases: [], changeNotes: [] };
       persons.push(p); added++;
+    }
+    for (const u of rec.uidAliases) if (!(p.uidAliases ||= []).includes(u)) p.uidAliases.push(u);
+    for (const n of rec.nameAliases) if (!(p.nameAliases ||= []).includes(n)) p.nameAliases.push(n);
+    for (const t of [rec.uidNote && `統號變更：${rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote}`].filter(Boolean)) {
+      if (!(p.changeNotes ||= []).includes(t)) p.changeNotes.push(t);
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
       fatherName: rec.fatherName, motherName: rec.motherName, spouseName: rec.spouseName,
-      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid };
+      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate) };
     let changed = false;
     for (const [k, v] of Object.entries(incoming)) {
       if (!v) continue;
@@ -164,7 +200,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
       }
     }
     if (!(p.sources ||= []).includes(fileName)) p.sources.push(fileName);
-    if (changed && added === 0) updated++;
+    if (changed && !isNew) updated++;
   }
   return { added, updated, conflicts };
 }
@@ -176,8 +212,8 @@ function hhrLink(persons, files) {
   const byUid = {}, byId = {}, byName = {};
   for (const p of persons) {
     byId[p.id] = p;
-    if (p.uid) byUid[normUid(p.uid)] = p;
-    if (p.name) (byName[p.name] ||= []).push(p);
+    for (const k of [normUid(p.uid), p.mergeKey, ...(p.uidAliases || [])].filter(Boolean)) byUid[k] = p;
+    for (const n of [p.name, ...(p.nameAliases || [])].filter(Boolean)) if (!(byName[n] ||= []).includes(p)) byName[n].push(p);
   }
   const birthOf = p => hhrDate(p.birthRaw) || "";
   const label = p => `${p.name}（${maskUid(p.uid)}）`;
@@ -196,12 +232,23 @@ function hhrLink(persons, files) {
     a.spouse = b.id; b.spouse = a.id;
   };
 
+  // 補性別：被指為父者為男、為母者為女（戶役政匯出檔常無性別欄）
+  const inferGender = () => {
+    for (const p of persons) {
+      const f = byId[p.father], m = byId[p.mother];
+      if (f && !f.gender) f.gender = "M";
+      if (m && !m.gender) m.gender = "F";
+    }
+  };
+
   // 1. 統一編號直接指定
   for (const p of persons) {
     if (p.fatherUid && byUid[p.fatherUid]) setParent(p, "father", byUid[p.fatherUid]);
     if (p.motherUid && byUid[p.motherUid]) setParent(p, "mother", byUid[p.motherUid]);
     if (p.spouseUid && byUid[p.spouseUid]) setSpouse(p, byUid[p.spouseUid]);
   }
+
+  inferGender();
 
   // 2. 親等關聯資料：依稱謂與本人的關係
   for (const f of files.filter(f => f.kind === "kin")) {
@@ -254,10 +301,11 @@ function hhrLink(persons, files) {
   for (const p of persons) {
     for (const rel of ["father", "mother"]) {
       const q = byId[p[rel]], nm = p[rel + "Name"];
-      if (q && nm && q.name !== nm) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
+      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
     }
   }
+  inferGender();
   return { warnings: [...new Set(warnings)] };
 }
 
-if (typeof module !== "undefined") module.exports = { HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+if (typeof module !== "undefined") module.exports = { HHR_IGNORED, changeAliases, HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };

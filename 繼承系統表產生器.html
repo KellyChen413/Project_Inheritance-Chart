@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 安全政策：禁止載入或連線到任何外部位址；以雜湊值只允許本檔案內既有的程式與樣式執行（由 web/build.py 產生時自動計算） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-VY8Y+dClg+Q7J4L36ddOt9UfCVQ6+Q6BZDLVkSLnbeg='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W1eZ5vjGgGYyB6xbQu4U7tKkBvp69I9QwVTwwLFWaUY=' 'sha256-/qvfMJdw7SS7oxpUZ4Ns3Iz2OccFryfVK1hbBBu4Uns=' 'sha256-JPndUMwEus8cF48abAXCFNA83fWl8ZeSt/oZ/NkJhxU='; style-src 'sha256-GlWoxSHdy9Zruv1tFMlTVxNKvmMdosuoW23rwL0ybtc='; connect-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; img-src data: blob:; font-src data:; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <title>繼承系統表產生器</title>
@@ -491,7 +491,7 @@ footer.note {
 <dialog id="confirm-dialog"><h3 id="confirm-title">請確認</h3><p id="confirm-text"></p><div class="map-actions"><button type="button" id="confirm-no">取消</button><button type="button" class="primary" id="confirm-yes">確定</button></div></dialog>
 <script type="application/json" id="sample-data">{"_說明": "全部為虛構資料，僅供展示。真實戶籍資料不得放入此專案。", "decedent": "P01", "persons": [{"id": "P01", "name": "王大明", "title": "被繼承人", "gender": "M", "birth": "1948-05-12", "death": "2025-03-10", "father": "P90", "mother": "P91", "spouse": "P02"}, {"id": "P02", "name": "林美華", "title": "配偶", "gender": "F", "birth": "1951-09-03"}, {"id": "P90", "name": "王福來", "title": "父", "gender": "M", "birth": "1920-02-01", "death": "1990-11-20", "spouse": "P91"}, {"id": "P91", "name": "李秀英", "title": "母", "gender": "F", "birth": "1926-07-15"}, {"id": "P92", "name": "王大華", "title": "弟", "gender": "M", "birth": "1953-04-08", "father": "P90", "mother": "P91"}, {"id": "P10", "name": "王志強", "title": "長男", "gender": "M", "birth": "1972-01-20", "father": "P01", "mother": "P02"}, {"id": "P11", "name": "王志偉", "title": "次男", "gender": "M", "birth": "1975-06-30", "death": "2020-06-01", "father": "P01", "mother": "P02", "spouse": "P30"}, {"id": "P30", "name": "黃雅婷", "title": "次男之配偶", "gender": "F", "birth": "1977-03-11"}, {"id": "P20", "name": "王小安", "title": "孫", "gender": "M", "birth": "2001-08-08", "father": "P11", "mother": "P30"}, {"id": "P21", "name": "王小平", "title": "孫女", "gender": "F", "birth": "2004-12-01", "father": "P11", "mother": "P30"}, {"id": "P12", "name": "王淑芬", "title": "長女", "gender": "F", "birth": "1978-10-05", "father": "P01", "mother": "P02", "renounced": ["P01"]}, {"id": "P22", "name": "陳小美", "title": "外孫女", "gender": "F", "birth": "2006-05-17", "mother": "P12"}, {"id": "P13", "name": "王淑娟", "title": "次女", "gender": "F", "birth": "1981-02-14", "death": "2025-08-01", "father": "P01", "mother": "P02", "spouse": "P31"}, {"id": "P31", "name": "張建國", "title": "次女之配偶", "gender": "M", "birth": "1979-09-09"}, {"id": "P23", "name": "張小宇", "title": "外孫", "gender": "M", "birth": "2010-03-03", "father": "P31", "mother": "P13"}]}</script>
 <script type="application/json" id="sample-3gen">{"_說明": "三代綜合案例（全部虛構）：代位繼承、再轉繼承、拋棄繼承（含僅拋棄再轉部分）", "decedent": "X", "queried": ["X", "C2", "C3", "C4"], "persons": [{"id": "X", "name": "陳國華", "gender": "M", "birth": "1945-04-02", "death": "2025-03-10", "spouse": "W", "uid": "A000001001"}, {"id": "W", "name": "林秀蘭", "gender": "F", "birth": "1948-06-15", "uid": "A000001002", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C1", "name": "陳志明", "gender": "M", "birth": "1970-01-12", "father": "X", "mother": "W", "uid": "A000001011", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C2", "name": "陳志豪", "gender": "M", "birth": "1973-05-20", "death": "2025-08-01", "father": "X", "mother": "W", "spouse": "C2W", "uid": "A000001012"}, {"id": "C2W", "name": "吳雅芳", "gender": "F", "birth": "1975-02-03", "uid": "A000001021", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G1", "name": "陳柏翰", "gender": "M", "birth": "2000-03-03", "father": "C2", "mother": "C2W", "uid": "A000001031", "renounceChecks": {"C2": {"status": "none", "checkedOn": "114/10/20"}}}, {"id": "G2", "name": "陳思妤", "gender": "F", "birth": "2003-07-07", "father": "C2", "mother": "C2W", "uid": "A000001032", "renounceChecks": {"C2": {"status": "yes", "court": "臺灣新北地方法院", "caseNo": "114年度司繼字第987號", "checkedOn": "114/10/20"}}}, {"id": "C3", "name": "陳美玲", "gender": "F", "birth": "1976-09-09", "death": "2016-04-01", "father": "X", "mother": "W", "spouse": "C3H", "uid": "A000001013"}, {"id": "C3H", "name": "黃建宏", "gender": "M", "birth": "1974-12-24", "uid": "A000001022"}, {"id": "G3", "name": "黃子軒", "gender": "M", "birth": "2001-01-01", "father": "C3H", "mother": "C3", "uid": "A000001033", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "G4", "name": "黃子涵", "gender": "F", "birth": "2004-02-02", "father": "C3H", "mother": "C3", "uid": "A000001034", "renounceChecks": {"X": {"status": "none", "checkedOn": "114/6/2"}}}, {"id": "C4", "name": "陳美珍", "gender": "F", "birth": "1979-11-11", "father": "X", "mother": "W", "uid": "A000001014", "renounceChecks": {"X": {"status": "yes", "court": "臺灣臺北地方法院", "caseNo": "114年度司繼字第321號", "checkedOn": "114/6/2"}}}, {"id": "G5", "name": "李小美", "gender": "F", "birth": "2008-08-08", "mother": "C4", "uid": "A000001035"}]}</script>
-<script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n母,李秀英,A000000091,女,015/07/15,,,,王福來\n配偶,林美華,A000000002,女,040/09/03,,,,王大明\n弟,王大華,A000000092,男,042/04/08,,王福來,李秀英,\n長男,王志強,A000000010,男,061/01/20,,王大明,林美華,\n次男,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n長女,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n次女,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n孫,王小安,A000000020,男,090/08/08,,王志偉,黃雅婷,\n外孫女,陳小美,A000000022,女,095/05/17,,陳文雄,王淑芬,\n外孫,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "稱謂,姓名,統一編號,性別,出生日期,死亡日期,父姓名,母姓名,配偶姓名\n本人,王淑娟,A000000013,女,070/02/14,114/08/01,王大明,林美華,張建國\n父,王大明,A000000001,男,037/05/12,114/03/10,王福來,李秀英,林美華\n母,林美華,A000000002,女,040/09/03,,,,王大明\n配偶,張建國,A000000031,男,068/09/09,,張老三,吳美玉,王淑娟\n長男,張小宇,A000000023,男,099/03/03,,張建國,王淑娟,\n兄,王志強,A000000010,男,061/01/20,,王大明,林美華,\n兄,王志偉,A000000011,男,064/06/30,109/06/01,王大明,林美華,黃雅婷\n姊,王淑芬,A000000012,女,067/10/05,,王大明,林美華,\n祖父,王福來,A000000090,男,009/02/01,079/11/20,,,李秀英\n祖母,李秀英,A000000091,女,015/07/15,,,,王福來\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
+<script type="application/json" id="hhr-samples">[{"name": "範例1_王大明_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000001,王大明,本人,037/05/12,114/03/10,059/03/01,A000000002,林美華,,王福來,A000000091,李秀英,,\n2,查看,,王福來,父,009/02/01,079/11/20,,,,,,,,,\n3,查看,A000000091,李秀英,母,015/07/15,,,,王福來,,,,,,\n4,查看,A000000002,林美華,配偶,040/09/03,,059/03/01,A000000001,王大明,,,,,,\n5,查看,A000000092,王大華,弟,042/04/08,,,,,,王福來,A000000091,李秀英,,\n6,查看,A000000010,王志強,長男,061/01/20,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,次男,064/06/30,109/06/01,090/01/01,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,長女,067/10/05,,,,,A000000001,王大明,A000000002,林美華,,原名王淑華，民國90年更名\n9,查看,A000000013,王淑娟,次女,070/02/14,114/08/01,098/05/20,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n10,查看,A000000020,王小安,孫,090/08/08,,,,,A000000011,王志偉,,黃雅婷,,\n11,查看,A000000022,陳小美,外孫女,095/05/17,,,,,,陳文雄,,王淑華,,\n12,查看,A000000023,張小宇,外孫,099/03/03,,,,,A000000031,張建國,A000000013,王淑娟,,\n"}, {"name": "範例2_王淑娟_二親等資料.csv", "text": "項目,查看,統一編號,姓名,稱謂,出生日期,死亡日期,結婚日期,配偶統號,配偶姓名,父親統號,父親姓名,母親統號,母親姓名,統號變更註記,姓名變更註記\n1,查看,A000000013,王淑娟,本人,070/02/14,114/08/01,098/05/20,A000000031,張建國,A000000001,王大明,A000000002,林美華,,\n2,查看,A000000001,王大明,父,037/05/12,114/03/10,059/03/01,A000000002,林美華,,王福來,A000000091,李秀英,,\n3,查看,A000000002,林美華,母,040/09/03,,059/03/01,A000000001,王大明,,,,,,\n4,查看,A000000031,張建國,配偶,068/09/09,,098/05/20,A000000013,王淑娟,,張老三,,吳美玉,,\n5,查看,A000000023,張小宇,長男,099/03/03,,,,,A000000031,張建國,A000000013,王淑娟,,\n6,查看,A000000010,王志強,兄,061/01/20,,,,,A000000001,王大明,A000000002,林美華,,\n7,查看,A000000011,王志偉,兄,064/06/30,109/06/01,090/01/01,,黃雅婷,A000000001,王大明,A000000002,林美華,,\n8,查看,A000000012,王淑芬,姊,067/10/05,,,,,A000000001,王大明,A000000002,林美華,,原名王淑華，民國90年更名\n9,查看,,王福來,祖父,009/02/01,079/11/20,,,,,,,,,\n10,查看,A000000091,李秀英,祖母,015/07/15,,,,王福來,,,,,,\n"}, {"name": "範例3_王小平_個人戶籍資料.csv", "text": "統一編號,姓名,性別,出生年月日,死亡年月日,父親姓名,母親姓名,配偶姓名,戶籍地址\nA000000021,王小平,女,0931201,,王志偉,黃雅婷,,（虛構）\n"}]</script>
 <script>/**
  * @licstart The following is the entire license notice for the
  * JavaScript code in this page
@@ -1556,17 +1556,33 @@ const HHR_FIELDS = [
   { key: "name",       label: "姓名", kinds: ["kin", "personal"], required: ["kin", "personal"],
     syn: ["姓名", "名字", "本人姓名", "親屬姓名"] },
   { key: "uid",        label: "統一編號", kinds: ["kin", "personal"], required: ["kin", "personal"],
-    syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "本人統一編號", "親屬統一編號"] },
+    syn: ["統一編號", "身分證統一編號", "國民身分證統一編號", "身分證字號", "身分證號", "身分證號碼", "統號", "身分證統號", "本人統一編號", "本人統號", "親屬統一編號"] },
   { key: "gender",     label: "性別", kinds: ["kin", "personal"], syn: ["性別"] },
   { key: "birth",      label: "出生日期", kinds: ["kin", "personal"], syn: ["出生日期", "出生年月日", "生日", "出生", "出生日"] },
   { key: "death",      label: "死亡日期", kinds: ["kin", "personal"], syn: ["死亡日期", "死亡年月日", "死亡", "死亡日", "死亡(宣告)日期"] },
   { key: "fatherName", label: "父姓名", kinds: ["kin", "personal"], syn: ["父姓名", "父親姓名", "父", "父親"] },
   { key: "motherName", label: "母姓名", kinds: ["kin", "personal"], syn: ["母姓名", "母親姓名", "母", "母親"] },
   { key: "spouseName", label: "配偶姓名", kinds: ["kin", "personal"], syn: ["配偶姓名", "配偶", "配偶名"] },
-  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父身分證統一編號", "父身分證字號"] },
-  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母身分證統一編號", "母身分證字號"] },
-  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "fatherUid",  label: "父統一編號", kinds: ["kin", "personal"], syn: ["父統一編號", "父親統一編號", "父統號", "父親統號", "父身分證統一編號", "父身分證字號"] },
+  { key: "motherUid",  label: "母統一編號", kinds: ["kin", "personal"], syn: ["母統一編號", "母親統一編號", "母統號", "母親統號", "母身分證統一編號", "母身分證字號"] },
+  { key: "spouseUid",  label: "配偶統一編號", kinds: ["kin", "personal"], syn: ["配偶統一編號", "配偶統號", "配偶身分證統一編號", "配偶身分證字號"] },
+  { key: "marriageDate", label: "結婚日期", kinds: ["kin", "personal"], syn: ["結婚日期", "結婚年月日", "結婚日"] },
+  { key: "uidNote",    label: "統號變更註記", kinds: ["kin", "personal"], syn: ["統號變更註記", "統一編號變更註記", "統號變更", "統一編號變更"] },
+  { key: "nameNote",   label: "姓名變更註記", kinds: ["kin", "personal"], syn: ["姓名變更註記", "姓名變更", "更名註記"] },
 ];
+/* 戶役政匯出檔中不屬於資料的欄位（序號、操作按鈕），自動略過 */
+const HHR_IGNORED = ["項目", "查看", "序號", "編號", "操作", "選取"];
+
+/* 從變更註記中找出舊統號、舊姓名，供合併與父母姓名比對使用 */
+function changeAliases(uidNote, nameNote, uid, name) {
+  const uids = [...new Set((String(uidNote || "").toUpperCase().match(/[A-Z][0-9A-Z]\d{8}/g) || []).filter(u => u !== uid))];
+  const names = new Set();
+  const n = String(nameNote || "");
+  for (const m of n.matchAll(/(?:原名|原姓名|舊名|舊姓名|更名前|變更前|原為)[：:\s為]*([\u4e00-\u9fff]{2,6})/g)) names.add(m[1]);
+  for (const m of n.matchAll(/([\u4e00-\u9fff]{2,6})\s*(?:→|->|＞|>|改為|更名為|變更為|改名為)\s*([\u4e00-\u9fff]{2,6})/g)) { names.add(m[1]); names.add(m[2]); }
+  names.delete(name);
+  return { uidAliases: uids, nameAliases: [...names] };
+}
 
 const normHeader = h => String(h || "").replace(/[\s　]/g, "").replace(/（/g, "(").replace(/）/g, ")");
 const normUid = u => String(u || "").replace(/[\s　]/g, "").toUpperCase();
@@ -1610,6 +1626,7 @@ function hhrReadTable(text) {
 }
 
 function hhrGuessMapping(headers) {
+  // 「項目」「查看」等為戶役政畫面的序號與操作欄，不對應
   const map = {};
   const norm = headers.map(normHeader);
   const stripped = norm.map(h => h.replace(/\(.*?\)/g, ""));
@@ -1642,10 +1659,16 @@ function hhrParse(table, mapping, kind) {
   table.body.forEach((r, i) => {
     const line = i + table.headerRow + 1;
     const get = k => (k in mapping ? String(r[mapping[k]] ?? "").trim() : "");
-    const name = get("name"), uid = normUid(get("uid"));
+    const name = get("name");
+    let uid = normUid(get("uid")), noUid = false;
     if (!name && !uid) return;
-    if (!uid) { warnings.push(`第 ${line} 列（${name}）沒有統一編號，已略過`); return; }
     if (!name) { warnings.push(`第 ${line} 列（${maskUid(uid)}）沒有姓名，已略過`); return; }
+    if (!uid) {
+      // 早年死亡者常無統一編號：改以「姓名＋出生日期」識別，跨檔合併時仍可對上
+      const b = hhrDate(get("birth")) || get("birth");
+      uid = `無統號:${name}:${b || "?"}`; noUid = true;
+      warnings.push(`第 ${line} 列（${name}）沒有統一編號，改以姓名與出生日期識別${b ? "" : "（也沒有出生日期，跨檔合併可能不準確）"}`);
+    }
     if (seen.has(uid)) { warnings.push(`第 ${line} 列（${name}）統一編號在本檔重複出現，已略過重複列`); return; }
     seen.add(uid);
     const relation = get("relation").replace(/[\s　]/g, "");
@@ -1653,8 +1676,12 @@ function hhrParse(table, mapping, kind) {
     const gender = /^(男|M|m|1)$/.test(g) ? "M" : /^(女|F|f|2)$/.test(g) ? "F" : genderFromRelation(relation);
     const rec = { line, uid, name, gender, relation, birth: get("birth"), death: get("death"),
       fatherName: get("fatherName"), motherName: get("motherName"), spouseName: get("spouseName"),
-      fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")) };
-    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"]]) {
+      fatherUid: normUid(get("fatherUid")), motherUid: normUid(get("motherUid")), spouseUid: normUid(get("spouseUid")),
+      marriageDate: get("marriageDate"), uidNote: get("uidNote"), nameNote: get("nameNote"), noUid };
+    Object.assign(rec, changeAliases(rec.uidNote, rec.nameNote, uid, name));
+    if (rec.uidNote) warnings.push(`第 ${line} 列（${name}）有統號變更註記：「${rec.uidNote}」${rec.uidAliases.length ? "，舊統號已列入合併比對" : "，請人工確認"}`);
+    if (rec.nameNote) warnings.push(`第 ${line} 列（${name}）有姓名變更註記：「${rec.nameNote}」${rec.nameAliases.length ? `，曾用名「${rec.nameAliases.join("、")}」已列入父母姓名比對` : "，請人工確認父母姓名比對"}`);
+    for (const [k, label] of [["birth", "出生日期"], ["death", "死亡日期"], ["marriageDate", "結婚日期"]]) {
       if (rec[k] && hhrDate(rec[k]) === undefined) warnings.push(`第 ${line} 列（${name}）${label}「${rec[k]}」格式無法辨識，匯入後請修正`);
     }
     records.push(rec);
@@ -1680,20 +1707,29 @@ function hhrMerge(persons, parsed, fileName, makeId) {
   const conflicts = [];
   let added = 0, updated = 0;
   const LABEL = { name: "姓名", gender: "性別", birthRaw: "出生日期", deathRaw: "死亡日期",
-    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名" };
+    fatherName: "父姓名", motherName: "母姓名", spouseName: "配偶姓名", marriageDateRaw: "結婚日期" };
   const same = (a, b) => (hhrDate(a) || a) === (hhrDate(b) || b);
+  const keysOf = x => [normUid(x.uid), x.mergeKey, ...(x.uidAliases || [])].filter(Boolean);
   for (const rec of parsed.records) {
-    let p = persons.find(x => normUid(x.uid) === rec.uid);
+    const want = [rec.uid, ...rec.uidAliases];
+    let p = persons.find(x => keysOf(x).some(k => want.includes(k)));
+    const isNew = !p;
     if (!p) {
-      p = { id: persons.some(x => x.id === rec.uid) ? makeId() : rec.uid, uid: rec.uid, name: "", title: "", titleAuto: true,
+      const id = rec.noUid ? makeId() : (persons.some(x => x.id === rec.uid) ? makeId() : rec.uid);
+      p = { id, uid: rec.noUid ? "" : rec.uid, mergeKey: rec.noUid ? rec.uid : "", name: "", title: "", titleAuto: true,
         gender: "", birthRaw: "", deathRaw: "", father: "", mother: "", spouse: "",
         fatherName: "", motherName: "", spouseName: "", fatherUid: "", motherUid: "", spouseUid: "",
-        renounceChecks: {}, lost_right: [], sources: [] };
+        renounceChecks: {}, lost_right: [], sources: [], uidAliases: [], nameAliases: [], changeNotes: [] };
       persons.push(p); added++;
+    }
+    for (const u of rec.uidAliases) if (!(p.uidAliases ||= []).includes(u)) p.uidAliases.push(u);
+    for (const n of rec.nameAliases) if (!(p.nameAliases ||= []).includes(n)) p.nameAliases.push(n);
+    for (const t of [rec.uidNote && `統號變更：${rec.uidNote}`, rec.nameNote && `姓名變更：${rec.nameNote}`].filter(Boolean)) {
+      if (!(p.changeNotes ||= []).includes(t)) p.changeNotes.push(t);
     }
     const incoming = { name: rec.name, gender: rec.gender, birthRaw: rocOf(rec.birth), deathRaw: rocOf(rec.death),
       fatherName: rec.fatherName, motherName: rec.motherName, spouseName: rec.spouseName,
-      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid };
+      fatherUid: rec.fatherUid, motherUid: rec.motherUid, spouseUid: rec.spouseUid, marriageDateRaw: rocOf(rec.marriageDate) };
     let changed = false;
     for (const [k, v] of Object.entries(incoming)) {
       if (!v) continue;
@@ -1703,7 +1739,7 @@ function hhrMerge(persons, parsed, fileName, makeId) {
       }
     }
     if (!(p.sources ||= []).includes(fileName)) p.sources.push(fileName);
-    if (changed && added === 0) updated++;
+    if (changed && !isNew) updated++;
   }
   return { added, updated, conflicts };
 }
@@ -1715,8 +1751,8 @@ function hhrLink(persons, files) {
   const byUid = {}, byId = {}, byName = {};
   for (const p of persons) {
     byId[p.id] = p;
-    if (p.uid) byUid[normUid(p.uid)] = p;
-    if (p.name) (byName[p.name] ||= []).push(p);
+    for (const k of [normUid(p.uid), p.mergeKey, ...(p.uidAliases || [])].filter(Boolean)) byUid[k] = p;
+    for (const n of [p.name, ...(p.nameAliases || [])].filter(Boolean)) if (!(byName[n] ||= []).includes(p)) byName[n].push(p);
   }
   const birthOf = p => hhrDate(p.birthRaw) || "";
   const label = p => `${p.name}（${maskUid(p.uid)}）`;
@@ -1735,12 +1771,23 @@ function hhrLink(persons, files) {
     a.spouse = b.id; b.spouse = a.id;
   };
 
+  // 補性別：被指為父者為男、為母者為女（戶役政匯出檔常無性別欄）
+  const inferGender = () => {
+    for (const p of persons) {
+      const f = byId[p.father], m = byId[p.mother];
+      if (f && !f.gender) f.gender = "M";
+      if (m && !m.gender) m.gender = "F";
+    }
+  };
+
   // 1. 統一編號直接指定
   for (const p of persons) {
     if (p.fatherUid && byUid[p.fatherUid]) setParent(p, "father", byUid[p.fatherUid]);
     if (p.motherUid && byUid[p.motherUid]) setParent(p, "mother", byUid[p.motherUid]);
     if (p.spouseUid && byUid[p.spouseUid]) setSpouse(p, byUid[p.spouseUid]);
   }
+
+  inferGender();
 
   // 2. 親等關聯資料：依稱謂與本人的關係
   for (const f of files.filter(f => f.kind === "kin")) {
@@ -1793,13 +1840,14 @@ function hhrLink(persons, files) {
   for (const p of persons) {
     for (const rel of ["father", "mother"]) {
       const q = byId[p[rel]], nm = p[rel + "Name"];
-      if (q && nm && q.name !== nm) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
+      if (q && nm && q.name !== nm && !(q.nameAliases || []).includes(nm)) warnings.push(`${label(p)}的${rel === "father" ? "父" : "母"}連結為 ${q.name}，但戶籍記載為「${nm}」，請確認`);
     }
   }
+  inferGender();
   return { warnings: [...new Set(warnings)] };
 }
 
-// module.exports = { HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
+// module.exports = { HHR_IGNORED, changeAliases, HHR_FIELDS, hhrReadTable, hhrGuessMapping, hhrGuessKind, hhrParse, hhrMerge, hhrLink, maskUid, normUid };
 
 /* ============================================================
  * 承辦作業輔助
@@ -2475,7 +2523,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
         });
         r.insertCell().appendChild(sel);
         const v = f.key in mapping && sample[0] ? String(sample[0][mapping[f.key]] ?? "") : "";
-        r.insertCell().textContent = f.key === "uid" ? maskUid(v) : v;
+        r.insertCell().textContent = /uid$/i.test(f.key) ? maskUid(v) : v;
       }
       body.appendChild(t);
 
@@ -2491,7 +2539,7 @@ function openMapDialog(name, sourceLabel, table, kind0, mapping0, allowSimple = 
           const r = pb.insertRow();
           for (const f of prevFields) {
             let v = String(row[mapping[f.key]] ?? "").trim();
-            if (f.key === "uid") v = maskUid(v);
+            if (/uid$/i.test(f.key)) v = maskUid(v);
             if ((f.key === "birth" || f.key === "death") && parseDate(v)) v = roc(parseDate(v));
             r.insertCell().textContent = v;
           }
@@ -2578,6 +2626,13 @@ function renderTable() {
       }
       if (field === "name" && p.sources && p.sources.length) {
         const s = document.createElement("small"); s.className = "src"; s.textContent = `來源：${p.sources.length} 份`; s.title = p.sources.join("\n"); wrap.appendChild(s);
+      }
+      if (field === "name" && p.nameAliases && p.nameAliases.length) {
+        const s = document.createElement("small"); s.className = "note"; s.textContent = `曾用名：${p.nameAliases.join("、")}`;
+        s.title = (p.changeNotes || []).join("\n"); wrap.appendChild(s);
+      }
+      if (field === "uid" && !p.uid && p.mergeKey) {
+        const s = document.createElement("small"); s.className = "note"; s.textContent = "無統號（以姓名＋生日識別）"; wrap.appendChild(s);
       }
       return wrap;
     };
